@@ -36,7 +36,10 @@ defmodule ExShopifyApp.MixProject do
 
   defp package() do
     [
-      licenses: ["GPL-3.0"]
+      licenses: ["GPL-3.0"],
+      links: %{
+        "GitHub" => "https://github.com/NexPB/ex_shopify_app"
+      }
     ]
   end
 end
