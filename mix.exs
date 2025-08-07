@@ -7,7 +7,9 @@ defmodule ExShopifyApp.MixProject do
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      package: package()
     ]
   end
 
@@ -25,6 +27,16 @@ defmodule ExShopifyApp.MixProject do
       {:guardian, "~> 2.0"},
       {:tesla, "~> 1.11"},
       {:mint, "~> 1.0", optional: true}
+    ]
+  end
+
+  defp description do
+    "Your entrypoint to create a Shopify Application in Elixir."
+  end
+
+  defp package() do
+    [
+      licenses: ["GPL-3.0"]
     ]
   end
 end
