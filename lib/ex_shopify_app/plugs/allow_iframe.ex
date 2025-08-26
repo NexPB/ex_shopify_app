@@ -12,15 +12,20 @@ defmodule ExShopifyApp.Plugs.AllowIframe do
 
   def call(%Conn{} = conn, _opts) do
     resource = Token.Plug.current_resource(conn)
+    domains = ["https://admin.shopify.com"]
 
-    if is_binary(resource) do
-      Conn.put_resp_header(
-        conn,
-        "Content-Security-Policy",
-        "frame-ancestors https://#{resource} https://admin.shopify.com;"
-      )
-    else
-      conn
-    end
+    domains =
+      if is_binary(resource) do
+        ["https://#{resource}"] ++ domains
+      else
+        domains
+      end
+
+    conn
+    |> Plug.Conn.delete_resp_header("x-frame-options")
+    |> Conn.put_resp_header(
+      "content-security-policy",
+      "frame-ancestors #{Enum.join(domains, " ")};"
+    )
   end
 end
