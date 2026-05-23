@@ -4,14 +4,18 @@ defmodule ExShopifyApp.MixProject do
   def project do
     [
       app: :ex_shopify_app,
-      version: "0.1.2",
+      version: "1.0.0",
       elixir: "~> 1.18",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
       package: package()
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -27,7 +31,11 @@ defmodule ExShopifyApp.MixProject do
       {:plug, "~> 1.4"},
       {:guardian, "~> 2.0"},
       {:tesla, "~> 1.11"},
-      {:mint, "~> 1.0", optional: true}
+      {:telemetry, "~> 1.0"},
+      {:ecto, "~> 3.0"},
+      {:mint, "~> 1.0", optional: true},
+      {:ecto_sql, "~> 3.0", only: :test},
+      {:postgrex, ">= 0.0.0", only: :test}
     ]
   end
 
