@@ -26,8 +26,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
   inside `Repo.transaction/2` under a `SELECT ... FOR UPDATE` row lock and persists the
   new token before the transaction commits, serializing concurrent refreshes across
   nodes. The error taxonomy, telemetry, the host-app migration contract, and the
-  unavoidable post-response crash window are covered in the README and
-  `docs/access-token-refresh-safety.md`.
+  unavoidable post-response crash window are covered in the README and this module
+  documentation.
 
   ## `valid_token/2` decision table
 

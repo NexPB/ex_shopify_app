@@ -11,7 +11,7 @@ config :tesla, adapter: Tesla.Mock
 # The Ecto-backed store is exercised against a real Postgres so that
 # `SELECT ... FOR UPDATE` row locking actually contends across processes. We do
 # not use the SQL sandbox: real cross-connection row locks are the behaviour
-# under test, so each test cleans the table itself (see ExShopifyApp.RepoCase).
+# under test, so the tests clean the table explicitly between runs.
 config :ex_shopify_app, ExShopifyApp.TestRepo,
   url: "ecto://postgres:postgres@127.0.0.1:5432/ex_shopify_app_test",
   pool_size: 10

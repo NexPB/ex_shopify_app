@@ -3,7 +3,7 @@ defmodule ExShopifyApp.TestRepo do
   A Postgres-backed `Ecto.Repo` used only by the test suite to exercise the
   database-backed locked refresh path of `ExShopifyApp.AccessToken.Repo`.
 
-  Connection settings are configured at runtime in `test/test_helper.exs`.
+  Connection settings are configured in `config/test.exs`.
   """
 
   use Ecto.Repo,
