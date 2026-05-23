@@ -29,7 +29,7 @@ defmodule ExShopifyApp.MixProject do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:plug, "~> 1.4"},
-      {:guardian, "~> 2.0"},
+      {:guardian, "~> 2.4"},
       {:tesla, "~> 1.11"},
       {:telemetry, "~> 1.0"},
       {:ecto, "~> 3.0"},
