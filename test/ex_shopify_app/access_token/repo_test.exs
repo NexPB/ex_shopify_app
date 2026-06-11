@@ -204,6 +204,62 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     end
   end
 
+  # --- refresh_token: keep-alive window ---------------------------------------
+
+  describe "refresh_token/2 with :refresh_token_window" do
+    test "rotates a fresh token whose refresh token expires inside the window", %{
+      counter: counter
+    } do
+      mock_refresh(counter)
+      domain = "keepalive.myshopify.com"
+      # Access token fresh (just issued), refresh token expiring in 3 days.
+      store(domain, rt_expires_in: 3 * 24 * 60 * 60)
+
+      assert {:ok, %Token{refresh_token: "shprt_new", refresh_generation: 1}} =
+               TestStore.refresh_token(%{shopify_domain: domain},
+                 refresh_token_window: 7 * 24 * 60 * 60
+               )
+
+      assert calls(counter) == 1
+    end
+
+    test "without the option a fresh token is returned with no Shopify call", %{
+      counter: counter
+    } do
+      mock_refresh(counter)
+      domain = "keepalive-noop.myshopify.com"
+      store(domain, rt_expires_in: 3 * 24 * 60 * 60)
+
+      assert {:ok, %Token{refresh_token: "shprt_old", refresh_generation: 0}} =
+               TestStore.refresh_token(%{shopify_domain: domain})
+
+      assert calls(counter) == 0
+    end
+
+    test "valid_token/2 honors the window and falls back to the old token on failure", %{
+      counter: counter
+    } do
+      mock_refresh(counter)
+      domain = "keepalive-valid.myshopify.com"
+      store(domain, rt_expires_in: 3 * 24 * 60 * 60)
+
+      assert {:ok, %Token{refresh_generation: 1}} =
+               TestStore.valid_token(%{shopify_domain: domain},
+                 refresh_token_window: 7 * 24 * 60 * 60
+               )
+
+      # On refresh failure the still-valid access token is served (same soft
+      # semantics as the stale window) when stale_while_error is on.
+      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+
+      assert {:ok, %Token{access_token: "shpat_new", refresh_generation: 1}} =
+               TestStore.valid_token(%{shopify_domain: domain},
+                 refresh_token_window: 90 * 24 * 60 * 60,
+                 stale_while_error: true
+               )
+    end
+  end
+
   # --- concurrency ------------------------------------------------------------
 
   describe "concurrent refreshes" do

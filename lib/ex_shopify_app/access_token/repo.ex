@@ -47,6 +47,10 @@ defmodule ExShopifyApp.AccessToken.Repo do
     * `:lock_timeout` — `SET LOCAL lock_timeout` in milliseconds; on timeout the call
       returns `{:error, {:lock_timeout, reason}}`.
     * `:stale_while_error` — see `valid_token/2` above (default `false`).
+    * `:refresh_token_window` — seconds before *refresh-token* expiry at which a
+      refresh is forced even while the access token is fresh (default `nil` —
+      disabled). Drives keep-alive rotation; failures fall back like the stale
+      window.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -142,7 +146,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
           Token.expired?(token, now, Options.skew(opts)) ->
             refresh_token(repo, shop, opts)
 
-          Token.stale?(token, now, Options.soft_window(opts)) ->
+          Token.stale?(token, now, Options.soft_window(opts)) or
+              Token.refresh_token_expiring?(token, now, Options.refresh_token_window(opts)) ->
             case refresh_token(repo, shop, opts) do
               {:ok, refreshed} -> {:ok, refreshed}
               {:error, reason} -> stale_fallback(token, reason, opts)
@@ -278,7 +283,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
   defp refresh_needed?(token, now, opts) do
     Token.expired?(token, now, Options.skew(opts)) or
-      Token.stale?(token, now, Options.soft_window(opts))
+      Token.stale?(token, now, Options.soft_window(opts)) or
+      Token.refresh_token_expiring?(token, now, Options.refresh_token_window(opts))
   end
 
   # `last_refresh_error` is operational metadata only; record it in a separate write so
