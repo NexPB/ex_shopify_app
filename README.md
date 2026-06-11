@@ -31,34 +31,16 @@ built around that safety concern.
 ### 1. Run the migration
 
 Create the `shopify_access_tokens` table. `shopify_domain` is the primary key, so there
-is exactly one canonical token chain per shop/installation:
+is exactly one canonical token chain per shop/installation. Delegate to
+`ExShopifyApp.AccessToken.Migrations` so the table can never drift from the schema the
+library is compiled against:
 
 ```elixir
 defmodule MyApp.Repo.Migrations.CreateShopifyAccessTokens do
   use Ecto.Migration
 
-  def change do
-    create table(:shopify_access_tokens, primary_key: false) do
-      add :shopify_domain, :string, primary_key: true
-      add :access_token, :text, null: false
-      add :refresh_token, :text
-      add :scope, :text
-
-      add :expires_in, :integer
-      add :refresh_token_expires_in, :integer
-      add :expires_at, :utc_datetime_usec
-      add :refresh_token_expires_at, :utc_datetime_usec
-
-      add :last_refreshed_at, :utc_datetime_usec
-      add :last_refresh_error, :text
-      add :refresh_generation, :integer, null: false, default: 0
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    create index(:shopify_access_tokens, [:expires_at])
-    create index(:shopify_access_tokens, [:refresh_token_expires_at])
-  end
+  def up, do: ExShopifyApp.AccessToken.Migrations.up()
+  def down, do: ExShopifyApp.AccessToken.Migrations.down()
 end
 ```
 
