@@ -34,7 +34,9 @@ defmodule ExShopifyApp.MixProject do
       {:telemetry, "~> 1.0"},
       {:ecto, "~> 3.0"},
       {:mint, "~> 1.0", optional: true},
-      {:ecto_sql, "~> 3.0", only: :test},
+      # Optional: only needed for ExShopifyApp.AccessToken.Migrations — any host
+      # running the bundled migration already has an Ecto SQL repo.
+      {:ecto_sql, "~> 3.0", optional: true},
       {:postgrex, ">= 0.0.0", only: :test}
     ]
   end
