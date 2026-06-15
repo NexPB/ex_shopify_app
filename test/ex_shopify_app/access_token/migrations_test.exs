@@ -19,20 +19,35 @@ defmodule ExShopifyApp.AccessToken.MigrationsTest do
     TestRepo.query!("SELECT to_regclass('shopify_access_tokens')").rows |> hd() |> hd()
   end
 
+  # The version is recorded in the table comment; nil once the table is dropped.
+  defp migrated_version do
+    TestRepo.query!(
+      "SELECT pg_catalog.obj_description(to_regclass('shopify_access_tokens'), 'pg_class')"
+    ).rows
+    |> hd()
+    |> hd()
+  end
+
   test "up/0 and down/0 create and drop the shopify_access_tokens table" do
     # The table already exists from test_helper's initial migration; up/0 must be
-    # idempotent against it.
+    # idempotent against it and the recorded version is the current version.
     refute is_nil(table_oid())
+    assert migrated_version() == "1"
 
+    # Already on the latest version: re-running up/0 is a no-op.
     Ecto.Migrator.up(TestRepo, @version, HostMigration)
     refute is_nil(table_oid())
+    assert migrated_version() == "1"
 
     Ecto.Migrator.down(TestRepo, @version, HostMigration)
     assert is_nil(table_oid())
+    # The version comment goes away with the table.
+    assert is_nil(migrated_version())
 
     # Restore the schema for the rest of the suite (shared database).
     Ecto.Migrator.up(TestRepo, @version, HostMigration)
     refute is_nil(table_oid())
+    assert migrated_version() == "1"
 
     columns =
       TestRepo.query!("""
