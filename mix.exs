@@ -35,7 +35,9 @@ defmodule ExShopifyApp.MixProject do
       {:ecto, "~> 3.0"},
       {:mint, "~> 1.0", optional: true},
       {:ecto_sql, "~> 3.0", only: :test},
-      {:postgrex, ">= 0.0.0", only: :test}
+      {:postgrex, ">= 0.0.0", only: :test},
+      {:mox, "~> 1.0", only: :test},
+      {:ex_machina, "~> 2.7", only: :test}
     ]
   end
 

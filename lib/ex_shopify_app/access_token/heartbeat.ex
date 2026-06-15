@@ -1,4 +1,4 @@
-defmodule ExShopifyApp.AccessToken.KeepAlive do
+defmodule ExShopifyApp.AccessToken.Heartbeat do
   @moduledoc """
   Periodically rotates token chains whose refresh token nears its 90-day expiry.
 
@@ -14,7 +14,7 @@ defmodule ExShopifyApp.AccessToken.KeepAlive do
 
   Add to your supervision tree:
 
-      {ExShopifyApp.AccessToken.KeepAlive,
+      {ExShopifyApp.AccessToken.Heartbeat,
        store: MyApp.ShopifyAccessTokens, repo: MyApp.Repo}
 
   ## Options
@@ -103,7 +103,7 @@ defmodule ExShopifyApp.AccessToken.KeepAlive do
 
       {:error, reason} ->
         Logger.warning(
-          "ex_shopify_app keep-alive refresh failed for #{domain}: #{inspect(reason)}"
+          "ex_shopify_app heartbeat refresh failed for #{domain}: #{inspect(reason)}"
         )
     end
   end

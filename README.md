@@ -108,11 +108,11 @@ end
 
 On-demand refreshing only fires when a token is used. A shop with no API activity
 can silently cross the 90-day refresh-token expiry, after which only the merchant
-relaunching the app restores access. Add the keep-alive process to your
+relaunching the app restores access. Add the heartbeat process to your
 supervision tree to rotate chains before they reach the cliff:
 
 ```elixir
-{ExShopifyApp.AccessToken.KeepAlive,
+{ExShopifyApp.AccessToken.Heartbeat,
  store: MyApp.ShopifyAccessTokens, repo: MyApp.Repo}
 ```
 

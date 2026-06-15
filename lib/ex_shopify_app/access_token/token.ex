@@ -182,7 +182,7 @@ defmodule ExShopifyApp.AccessToken.Token do
   @doc """
   Returns `true` when the refresh token expires within `window` seconds of `now`.
 
-  Drives keep-alive rotation: a dormant shop's access token may be fresh (or
+  Drives heartbeat rotation: a dormant shop's access token may be fresh (or
   long-expired and untouched) while its refresh token silently approaches the
   90-day cliff after which only the merchant can restore access. Lifetime tokens
   and a `nil` window are never expiring.
@@ -190,7 +190,8 @@ defmodule ExShopifyApp.AccessToken.Token do
   @spec refresh_token_expiring?(t(), DateTime.t(), non_neg_integer() | nil) :: boolean()
   def refresh_token_expiring?(token, now \\ DateTime.utc_now(), window)
 
-  def refresh_token_expiring?(%__MODULE__{refresh_token_expires_at: nil}, _now, _window), do: false
+  def refresh_token_expiring?(%__MODULE__{refresh_token_expires_at: nil}, _now, _window),
+    do: false
 
   def refresh_token_expiring?(%__MODULE__{}, _now, nil), do: false
 

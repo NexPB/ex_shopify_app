@@ -49,7 +49,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     * `:stale_while_error` — see `valid_token/2` above (default `false`).
     * `:refresh_token_window` — seconds before *refresh-token* expiry at which a
       refresh is forced even while the access token is fresh (default `nil` —
-      disabled). Drives keep-alive rotation; failures fall back like the stale
+      disabled). Drives heartbeat rotation; failures fall back like the stale
       window.
   """
 
