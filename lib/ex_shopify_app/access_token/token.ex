@@ -190,8 +190,7 @@ defmodule ExShopifyApp.AccessToken.Token do
   @spec refresh_token_expiring?(t(), DateTime.t(), non_neg_integer() | nil) :: boolean()
   def refresh_token_expiring?(token, now \\ DateTime.utc_now(), window)
 
-  def refresh_token_expiring?(%__MODULE__{refresh_token_expires_at: nil}, _now, _window),
-    do: false
+  def refresh_token_expiring?(%__MODULE__{refresh_token_expires_at: nil}, _now, _window), do: false
 
   def refresh_token_expiring?(%__MODULE__{}, _now, nil), do: false
 

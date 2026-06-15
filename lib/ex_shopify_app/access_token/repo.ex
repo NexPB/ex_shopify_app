@@ -146,8 +146,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
           Token.expired?(token, now, Options.skew(opts)) ->
             refresh_token(repo, shop, opts)
 
-          Token.stale?(token, now, Options.soft_window(opts)) or
-              Token.refresh_token_expiring?(token, now, Options.refresh_token_window(opts)) ->
+          Token.stale?(token, now, Options.soft_window(opts)) ->
             case refresh_token(repo, shop, opts) do
               {:ok, refreshed} -> {:ok, refreshed}
               {:error, reason} -> stale_fallback(token, reason, opts)
