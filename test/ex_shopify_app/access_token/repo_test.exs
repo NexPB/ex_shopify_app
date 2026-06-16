@@ -1,8 +1,7 @@
 defmodule ExShopifyApp.AccessToken.RepoTest do
   # async: false — refreshes run in spawned processes (Task.async_stream), so the Tesla
-  # adapter mock is set in Mox global mode, and a shared, non-sandboxed Postgres lets
-  # FOR UPDATE row locks actually contend across connections. RepoCase supplies the shared
-  # imports/aliases, global Mox mode, and the per-test table cleanup.
+  # adapter mock is set in Mox global mode. RepoCase runs each test inside the SQL
+  # sandbox in shared mode so spawned processes can use the test's connection/transaction.
   use ExShopifyApp.RepoCase, async: false
 
   # Asserts every `expect`ed call count was met (and not exceeded) at the end of a test.
