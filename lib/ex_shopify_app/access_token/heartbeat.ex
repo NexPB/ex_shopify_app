@@ -83,11 +83,13 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
   end
 
   defp expiring_domains(state) do
-    cutoff = DateTime.add(DateTime.utc_now(), state.window, :second)
+    now = DateTime.utc_now()
+    cutoff = DateTime.add(now, state.window, :second)
 
     state.repo.all(
       from(t in Token,
         where: not is_nil(t.refresh_token_expires_at),
+        where: t.refresh_token_expires_at > ^now,
         where: t.refresh_token_expires_at <= ^cutoff,
         order_by: [asc: t.refresh_token_expires_at],
         limit: ^state.batch_limit,
