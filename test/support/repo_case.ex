@@ -31,10 +31,13 @@ defmodule ExShopifyApp.RepoCase do
   # test must be visible to them.
   setup :set_mox_global
 
-  setup do
+  setup tags do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(ExShopifyApp.TestRepo)
-    # Shared mode: spawned refresh processes run on the test's sandbox connection.
-    Ecto.Adapters.SQL.Sandbox.mode(ExShopifyApp.TestRepo, {:shared, self()})
+
+    unless tags[:async] do
+      Ecto.Adapters.SQL.Sandbox.mode(ExShopifyApp.TestRepo, {:shared, self()})
+    end
+
     :ok
   end
 end
