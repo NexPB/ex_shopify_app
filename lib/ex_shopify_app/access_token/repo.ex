@@ -262,14 +262,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
         Options.transaction_opts(opts)
       )
 
-    result =
-      case txn do
-        {:ok, %Token{} = token} -> {:ok, token}
-        {:error, reason} -> {:error, reason}
-      end
-
-    maybe_record_refresh_error(repo, domain, result)
-    result
+    maybe_record_refresh_error(repo, domain, txn)
+    txn
   end
 
   defp perform_refresh(repo, shop, token, now, domain) do
