@@ -204,8 +204,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @spec migrate_token(module(), shop(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def migrate_token(repo, shop, opts \\ []) do
     shop = %{shop | shopify_domain: Token.normalize_domain(shop.shopify_domain)}
-    domain = shop.shopify_domain
-    with_refresh_telemetry(domain, fn -> locked_migrate(repo, shop, opts) end)
+    with_refresh_telemetry(shop.shopify_domain, fn -> locked_migrate(repo, shop, opts) end)
   end
 
   # Wraps a locked, single-rotation token operation in the refresh telemetry span and
@@ -320,23 +319,17 @@ defmodule ExShopifyApp.AccessToken.Repo do
           cond do
             is_nil(token) -> repo.rollback(:no_token)
             not migration_needed?(token) -> token
-            true -> perform_migrate(repo, shop, token, domain)
+            true -> perform_migrate(repo, shop, token)
           end
         end,
         Options.transaction_opts(opts)
       )
 
-    result =
-      case txn do
-        {:ok, %Token{} = token} -> {:ok, token}
-        {:error, reason} -> {:error, reason}
-      end
-
-    maybe_record_refresh_error(repo, domain, result)
-    result
+    maybe_record_refresh_error(repo, domain, txn)
+    txn
   end
 
-  defp perform_migrate(repo, shop, token, domain) do
+  defp perform_migrate(repo, shop, token) do
     case AccessToken.migrate(shop, token.access_token) do
       {:ok, migrated} ->
         case persist_refreshed(repo, token, migrated, nil) do
@@ -344,7 +337,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
             updated
 
           {:error, reason} ->
-            Telemetry.persistence_failed(domain, token)
+            Telemetry.persistence_failed(shop.shopify_domain, token)
             repo.rollback({:token_persistence_failed_after_refresh, reason})
         end
 
