@@ -203,8 +203,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
   """
   @spec migrate_token(module(), shop(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def migrate_token(repo, shop, opts \\ []) do
-    domain = Token.normalize_domain(shop.shopify_domain)
-    with_refresh_telemetry(domain, fn -> locked_migrate(repo, shop, domain, opts) end)
+    shop = %{shop | shopify_domain: Token.normalize_domain(shop.shopify_domain)}
+    domain = shop.shopify_domain
+    with_refresh_telemetry(domain, fn -> locked_migrate(repo, shop, opts) end)
   end
 
   # Wraps a locked, single-rotation token operation in the refresh telemetry span and
@@ -304,7 +305,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  defp locked_migrate(repo, shop, domain, opts) do
+  defp locked_migrate(repo, shop, opts) do
+    domain = shop.shopify_domain
+
     txn =
       repo.transaction(
         fn ->
