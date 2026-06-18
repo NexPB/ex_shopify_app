@@ -103,7 +103,7 @@ defmodule ExShopifyApp.AccessTokenTest do
 
   describe "migrate/2" do
     test "exchanges a non-expiring offline token for an expiring one" do
-      mock(fn %{method: :post, url: url, body: body} ->
+      expect(MockTeslaAdapter, :call, fn %{method: :post, url: url, body: body}, _opts ->
         assert url == "https://shop.myshopify.com/admin/oauth/access_token"
         params = JSON.decode!(body)
         assert params["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange"
@@ -117,7 +117,7 @@ defmodule ExShopifyApp.AccessTokenTest do
         assert params["subject_token"] == "shpat_lifetime"
         assert params["expiring"] == "1"
         assert params["client_id"] == "test-api-key"
-        json_response(@expiring_body, status: 200)
+        {:ok, json_response(@expiring_body, status: 200)}
       end)
 
       assert {:ok, %Token{} = token} = AccessToken.migrate(@shop, "shpat_lifetime")
@@ -128,7 +128,9 @@ defmodule ExShopifyApp.AccessTokenTest do
     end
 
     test "non-200 returns {:error, env}" do
-      mock(fn _ -> json_response(%{"error" => "invalid_subject_token"}, status: 400) end)
+      expect(MockTeslaAdapter, :call, fn _env, _opts ->
+        {:ok, json_response(%{"error" => "invalid_subject_token"}, status: 400)}
+      end)
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.migrate(@shop, "shpat_lifetime")
     end
