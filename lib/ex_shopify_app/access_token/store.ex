@@ -67,5 +67,18 @@ defmodule ExShopifyApp.AccessToken.Store do
   @callback migrate_token(shop :: shop(), opts :: keyword()) ::
               {:ok, Token.t()} | {:error, term()}
 
-  @optional_callbacks migrate_token: 2
+  @doc """
+  List the `shopify_domain`s whose refresh token expires within `window` seconds of now,
+  closest expiry first — the chains `ExShopifyApp.AccessToken.Heartbeat` proactively
+  rotates before they reach the refresh-token cliff.
+
+  Already-expired chains are excluded (they can no longer be refreshed), as are lifetime
+  (non-expiring) tokens. `opts` may carry `:limit` to cap the number returned.
+
+  Optional: only stores driven by the heartbeat need to implement it. See
+  `ExShopifyApp.AccessToken.Repo` for the reference implementation.
+  """
+  @callback expiring_domains(window :: non_neg_integer(), opts :: keyword()) :: [String.t()]
+
+  @optional_callbacks migrate_token: 2, expiring_domains: 2
 end

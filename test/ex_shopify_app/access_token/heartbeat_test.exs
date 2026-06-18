@@ -24,17 +24,12 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
   end
 
   describe "tick" do
+    # A dormant chain is one whose tokens were all issued ~90 days ago: its access token
+    # is long hard-expired while its refresh token is only now nearing the cliff. The
+    # `:issued` shift derives that state from the factory's default 1h / 90-day lifetimes.
     test "refreshes only chains whose refresh token expires inside the window" do
-      insert(:token,
-        shopify_domain: "due.myshopify.com",
-        refresh_token_expires_in: 3 * 24 * 60 * 60
-      )
-
-      insert(:token,
-        shopify_domain: "fine.myshopify.com",
-        refresh_token_expires_in: 60 * 24 * 60 * 60
-      )
-
+      insert(:token, shopify_domain: "due.myshopify.com", issued: days_ago(87))
+      insert(:token, shopify_domain: "fine.myshopify.com", issued: days_ago(30))
       insert(:lifetime_token, shopify_domain: "lifetime.myshopify.com")
 
       run_tick([])
@@ -50,10 +45,7 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
     end
 
     test "a failing refresh logs and does not crash the process" do
-      insert(:token,
-        shopify_domain: "flaky.myshopify.com",
-        refresh_token_expires_in: 3 * 24 * 60 * 60
-      )
+      insert(:token, shopify_domain: "flaky.myshopify.com", issued: days_ago(87))
 
       stub(MockTeslaAdapter, :call, fn _env, _opts ->
         {:ok, json_response(%{"error" => "server"}, status: 503)}
@@ -66,15 +58,8 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
     end
 
     test "respects :batch_limit, taking the chains closest to expiry first" do
-      insert(:token,
-        shopify_domain: "soonest.myshopify.com",
-        refresh_token_expires_in: 1 * 24 * 60 * 60
-      )
-
-      insert(:token,
-        shopify_domain: "later.myshopify.com",
-        refresh_token_expires_in: 5 * 24 * 60 * 60
-      )
+      insert(:token, shopify_domain: "soonest.myshopify.com", issued: days_ago(89))
+      insert(:token, shopify_domain: "later.myshopify.com", issued: days_ago(85))
 
       run_tick(batch_limit: 1)
 
@@ -89,7 +74,6 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
         Keyword.merge(
           [
             store: TestStore,
-            repo: TestRepo,
             window: @week,
             # Long enough that the scheduled tick never fires during the test.
             interval: :timer.hours(6),
@@ -104,4 +88,6 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
     :sys.get_state(pid)
     GenServer.stop(pid)
   end
+
+  defp days_ago(d), do: DateTime.add(DateTime.utc_now(), -d, :day)
 end

@@ -4,9 +4,10 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
 
   On-demand refreshing only fires when a shop's token is actually used, so a
   dormant installation can silently cross the refresh-token cliff — after which
-  only the merchant relaunching the app restores API access. This process scans
-  for chains expiring inside `:window` and rotates them through the store's
-  lock-serialized `refresh_token/2` with the `:refresh_token_window` option.
+  only the merchant relaunching the app restores API access. This process asks
+  the store for chains expiring inside `:window` (via
+  `c:ExShopifyApp.AccessToken.Store.expiring_domains/2`) and rotates them through
+  its lock-serialized `refresh_token/2`.
 
   Safe to run on every node: each refresh re-checks under the per-shop row lock,
   so concurrent ticks collapse into a single Shopify call per chain. Lifetime
@@ -14,13 +15,13 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
 
   Add to your supervision tree:
 
-      {ExShopifyApp.AccessToken.Heartbeat,
-       store: MyApp.ShopifyAccessTokens, repo: MyApp.Repo}
+      {ExShopifyApp.AccessToken.Heartbeat, store: MyApp.ShopifyAccessTokens}
 
   ## Options
 
-    * `:store` (required) — module implementing `ExShopifyApp.AccessToken.Store`
-    * `:repo` (required) — the `Ecto.Repo` holding `shopify_access_tokens`
+    * `:store` (required) — module implementing `ExShopifyApp.AccessToken.Store`,
+      including its optional `c:ExShopifyApp.AccessToken.Store.expiring_domains/2`
+      callback
     * `:window` — seconds before refresh-token expiry to rotate (default 7 days)
     * `:interval` — milliseconds between scans (default 6 hours)
     * `:batch_limit` — max chains refreshed per tick, closest expiry first
@@ -30,11 +31,7 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
 
   use GenServer
 
-  import Ecto.Query, only: [from: 2]
-
   require Logger
-
-  alias ExShopifyApp.AccessToken.Token
 
   @default_window 7 * 24 * 60 * 60
   @default_interval :timer.hours(6)
@@ -43,7 +40,6 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
   @typedoc "See the module documentation for the available options."
   @type option ::
           {:store, module()}
-          | {:repo, module()}
           | {:window, pos_integer()}
           | {:interval, pos_integer()}
           | {:batch_limit, pos_integer()}
@@ -58,7 +54,6 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
   def init(opts) do
     state = %{
       store: Keyword.fetch!(opts, :store),
-      repo: Keyword.fetch!(opts, :repo),
       window: Keyword.get(opts, :window, @default_window),
       interval: Keyword.get(opts, :interval, @default_interval),
       batch_limit: Keyword.get(opts, :batch_limit, @default_batch_limit)
@@ -75,31 +70,15 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
 
   @impl GenServer
   def handle_info(:tick, state) do
-    state
-    |> expiring_domains()
+    state.window
+    |> state.store.expiring_domains(limit: state.batch_limit)
     |> Enum.each(&rotate(state, &1))
 
     {:noreply, state, {:continue, :schedule}}
   end
 
-  defp expiring_domains(state) do
-    now = DateTime.utc_now()
-    cutoff = DateTime.add(now, state.window, :second)
-
-    state.repo.all(
-      from(t in Token,
-        where: not is_nil(t.refresh_token_expires_at),
-        where: t.refresh_token_expires_at > ^now,
-        where: t.refresh_token_expires_at <= ^cutoff,
-        order_by: [asc: t.refresh_token_expires_at],
-        limit: ^state.batch_limit,
-        select: t.shopify_domain
-      )
-    )
-  end
-
   defp rotate(state, domain) do
-    case state.store.refresh_token(%{shopify_domain: domain}, refresh_token_window: state.window) do
+    case state.store.refresh_token(%{shopify_domain: domain}) do
       {:ok, _token} ->
         :ok
 

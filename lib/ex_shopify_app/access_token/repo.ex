@@ -50,10 +50,6 @@ defmodule ExShopifyApp.AccessToken.Repo do
     * `:lock_timeout` — `SET LOCAL lock_timeout` in milliseconds; on timeout the call
       returns `{:error, {:lock_timeout, reason}}`.
     * `:stale_while_error` — see `valid_token/2` above (default `false`).
-    * `:refresh_token_window` — seconds before *refresh-token* expiry at which a
-      refresh is forced even while the access token is fresh (default `nil` —
-      disabled). Drives heartbeat rotation; failures fall back like the stale
-      window.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -97,6 +93,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
       @impl ExShopifyApp.AccessToken.Store
       def valid_token(shop, opts \\ []) do
         ExShopifyApp.AccessToken.Repo.valid_token(@__repo, shop, opts)
+      end
+
+      @impl ExShopifyApp.AccessToken.Store
+      def expiring_domains(window, opts \\ []) do
+        ExShopifyApp.AccessToken.Repo.expiring_domains(@__repo, window, opts)
       end
     end
   end
@@ -164,6 +165,38 @@ defmodule ExShopifyApp.AccessToken.Repo do
             {:ok, token}
         end
     end
+  end
+
+  @doc """
+  List the `shopify_domain`s whose refresh token expires within `window` seconds of now
+  via `repo`, closest expiry first.
+
+  Drives `ExShopifyApp.AccessToken.Heartbeat`. Already-expired chains are excluded (they
+  can no longer be refreshed) and lifetime (non-expiring) rows carry no
+  `refresh_token_expires_at`, so they are never selected. Pass `:limit` in `opts` to cap
+  the batch size.
+  """
+  @spec expiring_domains(module(), non_neg_integer(), keyword()) :: [String.t()]
+  def expiring_domains(repo, window, opts \\ []) do
+    now = DateTime.utc_now()
+    cutoff = DateTime.add(now, window, :second)
+
+    query =
+      from(t in Token,
+        where: not is_nil(t.refresh_token_expires_at),
+        where: t.refresh_token_expires_at > ^now,
+        where: t.refresh_token_expires_at <= ^cutoff,
+        order_by: [asc: t.refresh_token_expires_at],
+        select: t.shopify_domain
+      )
+
+    query =
+      case Keyword.get(opts, :limit) do
+        nil -> query
+        limit -> from(t in query, limit: ^limit)
+      end
+
+    repo.all(query)
   end
 
   @doc """
@@ -360,8 +393,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
   defp refresh_needed?(token, now, opts) do
     Token.expired?(token, now, Options.skew(opts)) or
-      Token.stale?(token, now, Options.soft_window(opts)) or
-      Token.refresh_token_expiring?(token, now, Options.refresh_token_window(opts))
+      Token.stale?(token, now, Options.soft_window(opts))
   end
 
   # `last_refresh_error` is operational metadata only; record it in a separate write so

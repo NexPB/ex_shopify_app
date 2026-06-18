@@ -99,8 +99,7 @@ relaunching the app restores access. Add the heartbeat process to your
 supervision tree to rotate chains before they reach the cliff:
 
 ```elixir
-{ExShopifyApp.AccessToken.Heartbeat,
- store: MyApp.ShopifyAccessTokens, repo: MyApp.Repo}
+{ExShopifyApp.AccessToken.Heartbeat, store: MyApp.ShopifyAccessTokens}
 ```
 
 It scans every `:interval` (default 6h) for chains whose refresh token expires

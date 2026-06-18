@@ -138,28 +138,30 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     end
   end
 
-  # --- refresh_token: heartbeat window ----------------------------------------
+  # --- expiring_domains -------------------------------------------------------
 
-  describe "refresh_token/2 with :refresh_token_window" do
-    test "rotates a fresh token whose refresh token expires inside the window" do
-      expect_refresh(1)
-      domain = "keepalive.myshopify.com"
-      # Access token fresh (just issued), refresh token expiring in 3 days.
-      insert(:token, shopify_domain: domain, refresh_token_expires_in: 3 * 24 * 60 * 60)
+  describe "expiring_domains/2" do
+    test "lists chains expiring inside the window, closest expiry first" do
+      insert(:token, shopify_domain: "soon.myshopify.com", issued: days_ago(89))
+      insert(:token, shopify_domain: "later.myshopify.com", issued: days_ago(85))
+      insert(:token, shopify_domain: "fine.myshopify.com", issued: days_ago(10))
+      insert(:lifetime_token, shopify_domain: "lifetime.myshopify.com")
 
-      assert {:ok, %Token{refresh_token: "shprt_new", refresh_generation: 1}} =
-               TestStore.refresh_token(%{shopify_domain: domain},
-                 refresh_token_window: 7 * 24 * 60 * 60
-               )
+      assert ["soon.myshopify.com", "later.myshopify.com"] =
+               TestStore.expiring_domains(7 * 24 * 60 * 60)
     end
 
-    test "without the option a fresh token is returned with no Shopify call" do
-      expect_no_refresh()
-      domain = "keepalive-noop.myshopify.com"
-      insert(:token, shopify_domain: domain, refresh_token_expires_in: 3 * 24 * 60 * 60)
+    test "excludes chains whose refresh token has already expired" do
+      insert(:token, shopify_domain: "dead.myshopify.com", issued: days_ago(91))
 
-      assert {:ok, %Token{refresh_token: "shprt_old", refresh_generation: 0}} =
-               TestStore.refresh_token(%{shopify_domain: domain})
+      assert [] = TestStore.expiring_domains(7 * 24 * 60 * 60)
+    end
+
+    test "respects :limit" do
+      insert(:token, shopify_domain: "soon.myshopify.com", issued: days_ago(89))
+      insert(:token, shopify_domain: "later.myshopify.com", issued: days_ago(85))
+
+      assert ["soon.myshopify.com"] = TestStore.expiring_domains(7 * 24 * 60 * 60, limit: 1)
     end
   end
 
@@ -335,4 +337,6 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   end
 
   defp hours_ago(h), do: DateTime.add(DateTime.utc_now(), -h, :hour)
+
+  defp days_ago(d), do: DateTime.add(DateTime.utc_now(), -d, :day)
 end

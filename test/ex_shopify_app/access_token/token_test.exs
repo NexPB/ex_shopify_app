@@ -249,24 +249,6 @@ defmodule ExShopifyApp.AccessToken.TokenTest do
     end
   end
 
-  describe "refresh_token_expiring?/3" do
-    test "false for lifetime tokens regardless of window" do
-      refute Token.refresh_token_expiring?(lifetime_token(), @now, @refresh_token_ttl)
-    end
-
-    test "false when no window is given" do
-      refute Token.refresh_token_expiring?(expiring_token(), @now, nil)
-    end
-
-    test "true only once the refresh token expires inside the window" do
-      token = expiring_token()
-      seconds_left = DateTime.diff(token.refresh_token_expires_at, @now, :second)
-
-      assert Token.refresh_token_expiring?(token, @now, seconds_left + 60)
-      refute Token.refresh_token_expiring?(token, @now, seconds_left - 60)
-    end
-  end
-
   defp expiring_token(shopify_domain \\ "shop.myshopify.com") do
     %Token{
       shopify_domain: shopify_domain,
