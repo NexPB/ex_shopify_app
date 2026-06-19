@@ -94,6 +94,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
       def valid_token(shop, opts \\ []) do
         ExShopifyApp.AccessToken.Repo.valid_token(@__repo, shop, opts)
       end
+
+      @impl ExShopifyApp.AccessToken.Store
+      def expiring_domains(window, opts \\ []) do
+        ExShopifyApp.AccessToken.Repo.expiring_domains(@__repo, window, opts)
+      end
     end
   end
 
@@ -160,6 +165,35 @@ defmodule ExShopifyApp.AccessToken.Repo do
             {:ok, token}
         end
     end
+  end
+
+  @doc """
+  List the `shopify_domain`s whose refresh token expires within `window` seconds of now
+  via `repo`, closest expiry first.
+
+  Drives `ExShopifyApp.AccessToken.Heartbeat`. Already-expired chains are excluded (they
+  can no longer be refreshed) and lifetime (non-expiring) rows carry no
+  `refresh_token_expires_at`, so they are never selected. Pass `:limit` in `opts` to cap
+  the batch size.
+  """
+  @spec expiring_domains(module(), non_neg_integer(), keyword()) :: [String.t()]
+  def expiring_domains(repo, window, opts \\ []) do
+    query =
+      from(t in Token,
+        where: not is_nil(t.refresh_token_expires_at),
+        where: t.refresh_token_expires_at > fragment("now()"),
+        where: t.refresh_token_expires_at <= from_now(^window, "second"),
+        order_by: [asc: t.refresh_token_expires_at],
+        select: t.shopify_domain
+      )
+
+    query =
+      case Keyword.get(opts, :limit) do
+        nil -> query
+        limit -> from(t in query, limit: ^limit)
+      end
+
+    repo.all(query)
   end
 
   @doc """

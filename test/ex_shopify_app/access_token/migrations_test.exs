@@ -1,10 +1,19 @@
 defmodule ExShopifyApp.AccessToken.MigrationsTest do
-  # async: false — migrates the shared, non-sandboxed test database.
+  # async: false — runs real migrations against the shared test database. The suite puts
+  # the sandbox in :manual mode (see test_helper.exs), but the migrator spawns its own
+  # task/connection that can't be served under manual mode. Flip this repo to :auto for the
+  # test so DDL runs and commits against normal pooled connections, then restore :manual.
   use ExUnit.Case, async: false
 
   alias ExShopifyApp.TestRepo
 
   @version 20_990_101_000_000
+
+  setup do
+    Ecto.Adapters.SQL.Sandbox.mode(TestRepo, :auto)
+    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.mode(TestRepo, :manual) end)
+    :ok
+  end
 
   defmodule HostMigration do
     @moduledoc "The one-liner migration shape host applications are told to write."
