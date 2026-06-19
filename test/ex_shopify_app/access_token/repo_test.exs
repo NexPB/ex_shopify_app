@@ -6,6 +6,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
 
+  alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
   alias ExShopifyApp.{TestRepo, TestStore}
 
@@ -360,7 +361,11 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
     on_exit(fn -> :telemetry.detach(handler) end)
 
-    assert {:error, {:token_persistence_failed_after_refresh, :persist_boom}} =
+    # The exchanged-but-unpersisted token is surfaced (not discarded) so a caller can
+    # retry the write; `reason` carries the original write error.
+    assert {:error,
+            {:token_persistence_failed_after_refresh,
+             %PersistenceFailure{reason: :persist_boom, token: %Token{}}}} =
              ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
 
     # Shopify was called, but the row is untouched (rolled back).
@@ -369,6 +374,26 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
     assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
                     _m, %{shopify_domain: ^domain}}
+  end
+
+  test "migrate persistence failure surfaces the exchanged token for retry", %{counter: counter} do
+    domain = "migpersistfail.myshopify.com"
+    store_lifetime(domain)
+    mock_refresh(counter)
+
+    assert {:error,
+            {:token_persistence_failed_after_refresh,
+             %PersistenceFailure{reason: :persist_boom, token: %Token{} = token}}} =
+             ExShopifyApp.FailingStore.migrate_token(%{shopify_domain: domain})
+
+    # The surfaced token is the new *expiring* one (not the lifetime input), ready to
+    # re-persist; without this the exchanged token would be lost.
+    assert token.refresh_token == "shprt_new"
+    assert not is_nil(token.expires_at)
+    assert calls(counter) == 1
+
+    # The row is untouched (rolled back) — still the lifetime token.
+    assert %Token{access_token: "shpat_lifetime", expires_at: nil} = stored(domain)
   end
 
   # --- lock timeout -----------------------------------------------------------

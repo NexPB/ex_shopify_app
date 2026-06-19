@@ -55,6 +55,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
   import Ecto.Query, only: [from: 2]
 
   alias ExShopifyApp.AccessToken
+  alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
   alias ExShopifyApp.AccessToken.RefreshResult
   alias ExShopifyApp.AccessToken.Repo.Options
@@ -277,7 +278,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
           {:error, reason} ->
             Telemetry.persistence_failed(domain, token)
-            repo.rollback({:token_persistence_failed_after_refresh, reason})
+
+            repo.rollback(
+              {:token_persistence_failed_after_refresh,
+               %PersistenceFailure{reason: reason, token: refreshed}}
+            )
         end
 
       {:error, reason} ->
@@ -332,7 +337,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
           {:error, reason} ->
             Telemetry.persistence_failed(shop.shopify_domain, token)
-            repo.rollback({:token_persistence_failed_after_refresh, reason})
+
+            repo.rollback(
+              {:token_persistence_failed_after_refresh,
+               %PersistenceFailure{reason: reason, token: migrated}}
+            )
         end
 
       {:error, reason} ->
