@@ -178,14 +178,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
   """
   @spec expiring_domains(module(), non_neg_integer(), keyword()) :: [String.t()]
   def expiring_domains(repo, window, opts \\ []) do
-    now = DateTime.utc_now()
-    cutoff = DateTime.add(now, window, :second)
-
     query =
       from(t in Token,
         where: not is_nil(t.refresh_token_expires_at),
-        where: t.refresh_token_expires_at > ^now,
-        where: t.refresh_token_expires_at <= ^cutoff,
+        where: t.refresh_token_expires_at > fragment("now()"),
+        where: t.refresh_token_expires_at <= from_now(^window, "second"),
         order_by: [asc: t.refresh_token_expires_at],
         select: t.shopify_domain
       )

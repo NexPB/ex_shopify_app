@@ -55,7 +55,7 @@ defmodule ExShopifyApp.Factory do
 
   @doc "An access token that has hard-expired (2h into a 1h lifetime)."
   def expired_token_factory(attrs) do
-    build(:token, Map.put(attrs, :issued, hours_ago(2)))
+    build(:token, Map.put(attrs, :issued, DateTime.add(DateTime.utc_now(:second), -2, :hour)))
   end
 
   @doc """
@@ -86,6 +86,4 @@ defmodule ExShopifyApp.Factory do
       overrides
     )
   end
-
-  defp hours_ago(h), do: DateTime.add(DateTime.utc_now(:second), -h * 3600, :second)
 end
