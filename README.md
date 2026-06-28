@@ -1,5 +1,10 @@
 # `ex_shopify_app`
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_shopify_app.svg)](https://hex.pm/packages/ex_shopify_app)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_shopify_app)
+[![Hex.pm Downloads](https://img.shields.io/hexpm/dt/ex_shopify_app.svg)](https://hex.pm/packages/ex_shopify_app)
+[![License](https://img.shields.io/hexpm/l/ex_shopify_app.svg)](https://github.com/NexPB/ex_shopify_app/blob/master/LICENSE)
+
 Your entrypoint to create a Shopify Application in Elixir.
 
 ## Installation

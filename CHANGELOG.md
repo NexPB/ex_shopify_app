@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- `ExShopifyApp.AccessToken.migrate/2` for migrating non-expiring offline tokens.
+- `ExShopifyApp.AccessToken.Migrations` helper so host apps can run the bundled
+  `shopify_access_tokens` migration without drift from the compiled schema.
+
+### Changed
+
+- Surface the exchanged-but-unpersisted token on persistence failure via
+  `ExShopifyApp.AccessToken.PersistenceFailure`, so callers can retry the write
+  instead of losing the token.
+
+## [1.0.0]
+
+### Added
+
+- Expiring offline access tokens with safe refresh:
+  - `ExShopifyApp.AccessToken.Repo` for generating a per-app durable store with
+    `fetch_token/1`, `put_token/2`, `valid_token/2`, and `refresh_token/2`.
+  - Per-shop, cross-node locked refresh via `SELECT ... FOR UPDATE`, never
+    returning a refreshed token until the new refresh token is durably committed.
+  - Telemetry events under `[:ex_shopify_app, :access_token, :refresh, ...]`.
+
+## [0.1.1]
+
+### Fixed
+
+- Unset the `x-frame-options` header so the app can be embedded in the Shopify admin.
+
+## [0.1.0]
+
+### Added
+
+- Initial release.
+
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.1...1.0.0
+[0.1.1]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/NexPB/ex_shopify_app/releases/tag/v0.1.0
