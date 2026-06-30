@@ -4,7 +4,7 @@ defmodule ExShopifyApp.MixProject do
   def project do
     [
       app: :ex_shopify_app,
-      version: "1.1.0",
+      version: "1.2.0",
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -20,7 +20,8 @@ defmodule ExShopifyApp.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {ExShopifyApp.Application, []}
     ]
   end
 

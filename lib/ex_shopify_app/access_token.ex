@@ -14,8 +14,8 @@ defmodule ExShopifyApp.AccessToken do
   import ExShopifyApp, only: [api_key: 0, api_secret: 0]
 
   alias ExShopifyApp.AccessToken.Token
-
-  @typep shop :: %{shopify_domain: String.t()}
+  alias ExShopifyApp.HTTP
+  alias ExShopifyApp.Shop
 
   @doc """
   Exchange a session token for an access token.
@@ -27,7 +27,7 @@ defmodule ExShopifyApp.AccessToken do
     * `:type` - `:offline` (default) or `:online`
     * `:expiring` - request an expiring token (default `true`)
   """
-  @spec fetch(shop(), String.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
+  @spec fetch(Shop.t(), String.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def fetch(shop, session_token, opts \\ []) when is_binary(session_token) do
     type = Keyword.get(opts, :type, :offline)
     expiring = Keyword.get(opts, :expiring, true)
@@ -53,7 +53,7 @@ defmodule ExShopifyApp.AccessToken do
     shop
     |> client()
     |> Tesla.post("/oauth/access_token", body)
-    |> unwrap_token_response(fn resp ->
+    |> HTTP.unwrap_response(fn resp ->
       {:ok, Token.from_response(resp.body, Map.get(shop, :shopify_domain))}
     end)
   end
@@ -69,7 +69,7 @@ defmodule ExShopifyApp.AccessToken do
   `ExShopifyApp.AccessToken.Repo` (or another `ExShopifyApp.AccessToken.Store`) to
   serialize and durably persist them.
   """
-  @spec refresh(shop(), String.t()) :: {:ok, Token.t()} | {:error, term()}
+  @spec refresh(Shop.t(), String.t()) :: {:ok, Token.t()} | {:error, term()}
   def refresh(shop, refresh_token) when is_binary(refresh_token) do
     body = %{
       client_id: api_key(),
@@ -81,7 +81,7 @@ defmodule ExShopifyApp.AccessToken do
     shop
     |> client()
     |> Tesla.post("/oauth/access_token", body)
-    |> unwrap_token_response(fn resp ->
+    |> HTTP.unwrap_response(fn resp ->
       {:ok, Token.from_response(resp.body, Map.get(shop, :shopify_domain))}
     end)
   end
@@ -97,7 +97,7 @@ defmodule ExShopifyApp.AccessToken do
   Docs:
   - <https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/offline-access-tokens#migrate-to-expiring-offline-access-tokens>
   """
-  @spec migrate(shop(), String.t()) :: {:ok, Token.t()} | {:error, term()}
+  @spec migrate(Shop.t(), String.t()) :: {:ok, Token.t()} | {:error, term()}
   def migrate(shop, offline_token) when is_binary(offline_token) do
     body = %{
       client_id: api_key(),
@@ -112,31 +112,21 @@ defmodule ExShopifyApp.AccessToken do
     shop
     |> client()
     |> Tesla.post("/oauth/access_token", body)
-    |> unwrap_token_response(fn resp ->
+    |> HTTP.unwrap_response(fn resp ->
       {:ok, Token.from_response(resp.body, Map.get(shop, :shopify_domain))}
     end)
   end
 
-  @spec client(shop()) :: Tesla.Client.t()
+  @spec client(Shop.t()) :: Tesla.Client.t()
   def client(%{shopify_domain: shopify_domain} = _shop) do
-    host = String.trim_leading(shopify_domain, "https://")
+    host = Shop.normalize_domain(shopify_domain)
 
     Tesla.client(
       [
         {Tesla.Middleware.BaseUrl, "https://#{host}/admin"},
         {Tesla.Middleware.JSON, engine: JSON}
       ],
-      Application.get_env(:tesla, :adapter, Tesla.Adapter.Mint)
+      ExShopifyApp.tesla_adapter()
     )
   end
-
-  @spec unwrap_token_response(Tesla.Env.result(), (Tesla.Env.t() -> {:ok, Token.t()})) ::
-          {:ok, Token.t()} | {:error, term()}
-  defp unwrap_token_response({:ok, %Tesla.Env{status: 200} = resp}, fun)
-       when is_function(fun, 1) do
-    fun.(resp)
-  end
-
-  defp unwrap_token_response({:ok, %Tesla.Env{} = resp}, _fun), do: {:error, resp}
-  defp unwrap_token_response({:error, reason}, _fun), do: {:error, reason}
 end
