@@ -22,7 +22,7 @@ end
 The library uses [Ecto](https://hexdocs.pm/ecto) for the canonical access-token
 schema, so `:ecto` is a required dependency. The durable store
 (`ExShopifyApp.AccessToken.Repo`) runs against **your** application's `Ecto.Repo`
-(and therefore your `:ecto_sql` driver) — the library itself does not pull in
+(and therefore your `:ecto_sql` driver); the library itself does not pull in
 `ecto_sql` or a database driver.
 
 ## Offline access tokens
@@ -90,7 +90,7 @@ end
 
 | State | Behaviour |
 | --- | --- |
-| Fresh token | Returned as-is — no lock, no HTTP call |
+| Fresh token | Returned as-is, with no lock or HTTP call |
 | Stale token | Locked refresh; on failure returns `{:error, reason}` (or the old token with `stale_while_error: true`) |
 | Hard-expired token | Blocking locked refresh |
 | Refresh token expired | `{:error, :reauthorization_required}` |
@@ -106,12 +106,12 @@ new token before committing. The lock serializes refreshes across all processes 
 nodes sharing the database.
 
 The unavoidable residual risk is a VM/host crash after Shopify responds but before the
-commit — Shopify and your database cannot share a transaction. Failures of the write
+commit: Shopify and your database cannot share a transaction. Failures of the write
 *after* a successful Shopify refresh surface as the distinct, critical
 `{:error, {:token_persistence_failed_after_refresh, %ExShopifyApp.AccessToken.PersistenceFailure{}}}`
 and emit telemetry plus an `error` log (token values redacted). The struct carries the
 exchanged-but-unpersisted `token` (and the underlying `reason`) so a caller can retry
-the write — e.g. via `put_token/2` — instead of losing the token; re-running the
+the write (e.g. via `put_token/2`) instead of losing the token; re-running the
 exchange would fail because Shopify has already invalidated the prior token.
 
 ### Error taxonomy
@@ -130,7 +130,14 @@ exchange would fail because Shopify has already invalidated the prior token.
 - `[:ex_shopify_app, :access_token, :refresh, :stale_while_error]`
 
 Metadata carries `:shopify_domain`, `:refresh_generation`, and a `:result`
-classification — never token values.
+classification, never token values.
+
+## Billing
+
+Shopify-native metered billing: report usage through the App Events API and read the
+merchant's active plan from the Admin API. See [docs/BILLING.md](docs/BILLING.md) for
+the full guide; the entry points are `ExShopifyApp.Billing`,
+`ExShopifyApp.Billing.AppEvents`, and `ExShopifyApp.Billing.Subscription`.
 
 ## Docs
 

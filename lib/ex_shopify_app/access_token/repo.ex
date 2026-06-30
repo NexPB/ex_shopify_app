@@ -60,6 +60,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
   alias ExShopifyApp.AccessToken.RefreshResult
   alias ExShopifyApp.AccessToken.Repo.Options
   alias ExShopifyApp.AccessToken.Telemetry
+  alias ExShopifyApp.Shop
 
   @doc false
   defmacro __using__(opts) do
@@ -98,13 +99,10 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  @typedoc "A shop reference carrying at least its `:shopify_domain`."
-  @type shop :: %{shopify_domain: String.t()}
-
   @doc "Fetch the stored token for a shop domain via `repo`."
   @spec fetch_token(module(), String.t()) :: {:ok, Token.t()} | {:error, :no_token}
   def fetch_token(repo, shopify_domain) do
-    domain = Token.normalize_domain(shopify_domain)
+    domain = Shop.normalize_domain(shopify_domain)
 
     case repo.get(Token, domain) do
       nil -> {:error, :no_token}
@@ -118,7 +116,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     attrs =
       token
       |> Map.take(Token.castable())
-      |> Map.put(:shopify_domain, Token.normalize_domain(shopify_domain))
+      |> Map.put(:shopify_domain, Shop.normalize_domain(shopify_domain))
 
     %Token{}
     |> Token.changeset(attrs)
@@ -134,9 +132,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
   See the module docs for the decision table and options.
   """
-  @spec valid_token(module(), shop(), keyword()) :: {:ok, Token.t()} | {:error, term()}
+  @spec valid_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def valid_token(repo, shop, opts \\ []) do
-    domain = Token.normalize_domain(shop.shopify_domain)
+    domain = Shop.normalize_domain(shop.shopify_domain)
     now = DateTime.utc_now()
 
     case fetch_token(repo, domain) do
@@ -178,9 +176,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
   Emits `[:ex_shopify_app, :access_token, :refresh]` `:start`/`:stop`/`:exception`
   telemetry. See `docs/access-token-refresh-safety.md` for the error taxonomy.
   """
-  @spec refresh_token(module(), shop(), keyword()) :: {:ok, Token.t()} | {:error, term()}
+  @spec refresh_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def refresh_token(repo, shop, opts \\ []) do
-    domain = Token.normalize_domain(shop.shopify_domain)
+    domain = Shop.normalize_domain(shop.shopify_domain)
     with_refresh_telemetry(domain, fn -> locked_refresh(repo, shop, domain, opts) end)
   end
 
@@ -202,9 +200,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
   Shares the refresh telemetry span and error taxonomy; see `refresh_token/3` and
   `docs/access-token-refresh-safety.md`.
   """
-  @spec migrate_token(module(), shop(), keyword()) :: {:ok, Token.t()} | {:error, term()}
+  @spec migrate_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def migrate_token(repo, shop, opts \\ []) do
-    shop = %{shop | shopify_domain: Token.normalize_domain(shop.shopify_domain)}
+    shop = %{shop | shopify_domain: Shop.normalize_domain(shop.shopify_domain)}
     with_refresh_telemetry(shop.shopify_domain, fn -> locked_migrate(repo, shop, opts) end)
   end
 

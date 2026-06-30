@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (WIP)
 
+## [1.2.0]
+
+### Added
+
+- Shopify-native billing plumbing (see `docs/BILLING.md`):
+  - `ExShopifyApp.Billing.AppEvents`: report metered usage to the App Events API,
+    authenticating via the `client_credentials` grant with a cached JWT.
+  - `ExShopifyApp.Billing.Subscription`: read the merchant's active plan from the
+    Admin API.
+  - `ExShopifyApp.Graphql`: a minimal Admin GraphQL client plus
+    `ensure_gid/2` / `trim_gid/1` helpers.
+  - `ExShopifyApp.Billing` facade with `pricing_url/2` for the hosted plan-selection
+    page.
+- `ExShopifyApp.tesla_adapter/0`: single source of truth for the outbound Tesla
+  adapter, now shared by the access-token and billing clients.
+
 ## [1.1.0]
 
 ### Added
@@ -46,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/NexPB/ex_shopify_app/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.1...1.0.0
 [0.1.1]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.0...v0.1.1
