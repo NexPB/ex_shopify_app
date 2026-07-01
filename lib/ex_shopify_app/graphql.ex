@@ -133,7 +133,7 @@ defmodule ExShopifyApp.Graphql do
     if String.starts_with?(gid, "gid://shopify") do
       gid
     else
-      "gid://shopify/#{String.capitalize(resource)}/#{gid}"
+      "gid://shopify/#{Macro.camelize(resource)}/#{gid}"
     end
   end
 end
