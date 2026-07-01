@@ -26,6 +26,19 @@ defmodule ExShopifyApp.Billing.Subscription do
   defstruct [:name, :status, :current_period_end]
 
   @doc """
+  Builds a `Subscription` struct from the GraphQL response.
+  """
+  @spec new(map()) :: t()
+  def new(%{"name" => name, "status" => status} = subscription)
+      when is_binary(name) and is_binary(status) do
+    %__MODULE__{
+      name: name,
+      status: status,
+      current_period_end: Map.get(subscription, "currentPeriodEnd")
+    }
+  end
+
+  @doc """
   Fetches the merchant's active Shopify subscription.
 
   Performs a network round-trip to the Admin GraphQL API; no special scope is required.
@@ -54,16 +67,10 @@ defmodule ExShopifyApp.Billing.Subscription do
     }
     """)
     |> Graphql.unwrap(fn data ->
-      with subscriptions when is_list(subscriptions) <-
-             get_in(data, ["currentAppInstallation", "activeSubscriptions"]),
-           %{"name" => name, "status" => status} = subscription <- List.first(subscriptions) do
-        {:ok,
-         %__MODULE__{
-           name: name,
-           status: status,
-           current_period_end: Map.get(subscription, "currentPeriodEnd")
-         }}
-      else
+      subscriptions = get_in(data, ["currentAppInstallation", "activeSubscriptions"])
+
+      case subscriptions do
+        [%{} = subscription | _] -> {:ok, new(subscription)}
         _ -> {:error, :no_subscription}
       end
     end)
