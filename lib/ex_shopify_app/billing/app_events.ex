@@ -36,11 +36,11 @@ defmodule ExShopifyApp.Billing.AppEvents do
     * `:timestamp` - the event `DateTime`, defaults to `DateTime.utc_now/0`.
 
   The API acknowledges receipt with `202` regardless of billing validation.
-  Returns `{:ok, body}` on `202`, `{:error, %Tesla.Env{}}` on any other response, or
-  `{:error, reason}` on a transport error.
+  Returns `{:ok, :accepted}` on `202`, `{:error, %Tesla.Env{}}` on any other response,
+  or `{:error, reason}` on a transport error.
   """
   @spec report(String.t(), String.t(), number(), String.t(), keyword()) ::
-          {:ok, any()} | {:error, any()}
+          {:ok, :accepted} | {:error, any()}
   def report(event_handle, shop_gid, value, idempotency_key, opts \\ []) do
     with {:ok, token} <- TokenServer.fetch() do
       timestamp = Keyword.get(opts, :timestamp, DateTime.utc_now())
@@ -57,7 +57,7 @@ defmodule ExShopifyApp.Billing.AppEvents do
       |> client()
       # `unstable` is the only version the App Events API exposes as of now.
       |> Tesla.post("/app/unstable/events", body)
-      |> HTTP.unwrap_response(202, fn env -> {:ok, env.body} end)
+      |> HTTP.unwrap_response(202, fn _env -> {:ok, :accepted} end)
     end
   end
 
