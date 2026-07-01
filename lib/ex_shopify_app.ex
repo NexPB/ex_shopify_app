@@ -21,6 +21,35 @@ defmodule ExShopifyApp do
   end
 
   @doc """
+  Returns the App Events config, with defaults merged in.
+
+  Read individual settings off the result:
+
+    * `:token_cache` — the `ExShopifyApp.Billing.TokenCache` implementation
+      `ExShopifyApp.Billing.AppEvents` calls `fetch/0` on. Defaults to
+      `ExShopifyApp.Billing.TokenServer`.
+    * `:start_token_cache` — whether `ExShopifyApp.Application` auto-supervises the
+      `:token_cache` module. Defaults to `true`; set `false` to supervise it yourself.
+
+  Configure via:
+
+      config :ex_shopify_app, :app_events,
+        token_cache: MyApp.TokenCache
+  """
+  @spec app_events_config() :: keyword()
+  def app_events_config() do
+    conf = Application.get_env(:ex_shopify_app, :app_events, [])
+
+    Keyword.merge(
+      [
+        token_cache: ExShopifyApp.Billing.TokenServer,
+        start_token_cache: true
+      ],
+      conf
+    )
+  end
+
+  @doc """
   Returns the Tesla adapter used for all outbound HTTP requests.
 
   Resolution order:

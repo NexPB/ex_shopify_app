@@ -11,8 +11,14 @@ defmodule ExShopifyApp.Billing.TokenServer do
   Because every request goes through this single process, concurrent first-callers
   coalesce onto one token fetch rather than each hitting the token endpoint — the
   refresh is serialized for free, with no global VM state.
+
+  This is the default `ExShopifyApp.Billing.TokenCache` implementation. Host apps that
+  prefer non-blocking reads can swap in their own (e.g. a Cachex/ETS TTL cache) via
+  `config :ex_shopify_app, :app_events, token_cache: MyApp.TokenCache`.
   """
   use GenServer
+
+  @behaviour ExShopifyApp.Billing.TokenCache
 
   @typedoc """
   Fetches a fresh token, returning `{:ok, token, expires_in_seconds}` or
@@ -44,6 +50,7 @@ defmodule ExShopifyApp.Billing.TokenServer do
   @doc """
   Returns a valid cached token, fetching and caching a new one if needed.
   """
+  @impl ExShopifyApp.Billing.TokenCache
   @spec fetch(GenServer.server()) :: {:ok, String.t()} | {:error, any()}
   def fetch(server \\ __MODULE__) do
     GenServer.call(server, :fetch, @call_timeout)
