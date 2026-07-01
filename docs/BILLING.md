@@ -69,7 +69,26 @@ so a `value` of `0` is rejected upstream; skip the call when there's nothing to 
 
 Authentication is handled for you: the client uses your app's Dev Dashboard credentials
 (`ExShopifyApp.api_key/0` / `api_secret/0`) via the `client_credentials` grant and
-caches the resulting JWT in the supervised `ExShopifyApp.Billing.TokenServer`.
+caches the resulting JWT in the configured `ExShopifyApp.Billing.TokenCache`. The default
+implementation, `ExShopifyApp.Billing.TokenServer`, is a supervised GenServer that
+serializes refreshes so concurrent first-callers coalesce onto a single token fetch.
+
+### Custom token cache
+
+The token source is pluggable via the `:app_events` config group. Point `:token_cache`
+at any module implementing the `ExShopifyApp.Billing.TokenCache` behaviour — for example
+a Cachex/ETS TTL cache if you'd rather have non-blocking reads than serialized refreshes:
+
+```elixir
+config :ex_shopify_app, :app_events, token_cache: MyApp.TokenCache
+```
+
+By default the library auto-supervises the `:token_cache` module. If you start it yourself,
+opt out:
+
+```elixir
+config :ex_shopify_app, :app_events, start_token_cache: false
+```
 
 ## Reading the active plan
 

@@ -11,13 +11,13 @@ defmodule ExShopifyApp.Billing.AppEvents do
   Authentication uses the app's Dev Dashboard credentials
   (`ExShopifyApp.api_key/0` / `ExShopifyApp.api_secret/0`) via the
   `client_credentials` grant — see `fetch_token/0` for the raw request. The resulting
-  JWT is valid ~60 min and cached by the supervised
-  `ExShopifyApp.Billing.TokenServer` until shortly before it expires.
+  JWT is valid ~60 min and cached by the configured `ExShopifyApp.Billing.TokenCache`
+  implementation (default `ExShopifyApp.Billing.TokenServer`) until shortly before it
+  expires.
 
   Docs: <https://shopify.dev/docs/apps/build/app-events>
   """
 
-  alias ExShopifyApp.Billing.TokenServer
   alias ExShopifyApp.HTTP
 
   @doc """
@@ -42,7 +42,7 @@ defmodule ExShopifyApp.Billing.AppEvents do
   @spec report(String.t(), String.t(), number(), String.t(), keyword()) ::
           {:ok, :accepted} | {:error, any()}
   def report(event_handle, shop_gid, value, idempotency_key, opts \\ []) do
-    with {:ok, token} <- TokenServer.fetch() do
+    with {:ok, token} <- ExShopifyApp.app_events_config()[:token_cache].fetch() do
       timestamp = Keyword.get(opts, :timestamp, DateTime.utc_now())
 
       body = %{
@@ -67,8 +67,8 @@ defmodule ExShopifyApp.Billing.AppEvents do
   This is the raw primitive: it performs the token request and returns
   `{:ok, token, expires_in_seconds}` straight from Shopify, `{:error, %Tesla.Env{}}` on a
   non-200 (or a 200 without a token), or `{:error, reason}` on a transport error. It does
-  no caching — for cached, serialized access use `ExShopifyApp.Billing.TokenServer`, which
-  wraps this by default.
+  no caching — for cached access use the configured `ExShopifyApp.Billing.TokenCache`
+  (default `ExShopifyApp.Billing.TokenServer`), which wraps this.
   """
   @spec fetch_token() :: {:ok, String.t(), non_neg_integer()} | {:error, any()}
   def fetch_token do

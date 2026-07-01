@@ -4,9 +4,14 @@ defmodule ExShopifyApp.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      ExShopifyApp.Billing.TokenServer
-    ]
+    app_events = ExShopifyApp.app_events_config()
+
+    children =
+      if app_events[:start_token_cache] do
+        [app_events[:token_cache]]
+      else
+        []
+      end
 
     Supervisor.start_link(
       children,
