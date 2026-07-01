@@ -82,7 +82,7 @@ defmodule ExShopifyApp.Billing.AppEvents do
     |> Tesla.post("/auth/access_token", body)
     |> HTTP.unwrap_response(fn
       %Tesla.Env{body: %{"access_token" => token} = resp} ->
-        {:ok, token, Map.get(resp, "expires_in", 3600)}
+        {:ok, token, Map.fetch!(resp, "expires_in")}
 
       %Tesla.Env{} = env ->
         {:error, env}

@@ -33,18 +33,13 @@ defmodule ExShopifyApp.Billing.Subscription do
   Returns:
 
     * `{:ok, %Subscription{}}` when the merchant has an active subscription.
-    * `{:error, :no_access_token}` when the shop has no usable access token.
     * `{:error, :no_subscription}` when there is no active subscription (e.g. a
       development store with no paid plan).
     * `{:error, {:graphql, errors}}` when the API returns GraphQL errors on a 200.
     * `{:error, reason}` on a transport error or a non-200 response (the `Tesla.Env`).
   """
-  @spec fetch_active(Shop.authorized()) ::
-          {:ok, t()} | {:error, :no_access_token | :no_subscription | term()}
-  def fetch_active(%{access_token: nil}),
-    do: {:error, :no_access_token}
-
-  def fetch_active(shop) do
+  @spec fetch_active(Shop.authorized()) :: {:ok, t()} | {:error, :no_subscription | term()}
+  def fetch_active(%{shopify_domain: _, access_token: _} = shop) do
     shop
     |> Graphql.client()
     |> Graphql.query("""

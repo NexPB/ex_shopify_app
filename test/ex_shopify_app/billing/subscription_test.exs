@@ -37,10 +37,6 @@ defmodule ExShopifyApp.Billing.SubscriptionTest do
               }} = Subscription.fetch_active(@shop)
     end
 
-    test "returns {:error, :no_access_token} when there is no usable token (no network call)" do
-      assert Subscription.fetch_active(%{@shop | access_token: nil}) == {:error, :no_access_token}
-    end
-
     test "returns {:error, :no_subscription} when there are no active subscriptions" do
       mock(fn _ ->
         json_response(
