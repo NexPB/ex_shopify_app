@@ -20,6 +20,8 @@ defmodule ExShopifyApp.AccessToken.Token do
 
   import Ecto.Changeset
 
+  alias ExShopifyApp.Shop
+
   @typedoc "An offline access token row with its expiry and refresh metadata."
   @type t :: %__MODULE__{
           shopify_domain: String.t() | nil,
@@ -153,15 +155,11 @@ defmodule ExShopifyApp.AccessToken.Token do
   end
 
   @doc """
-  Normalizes a shop domain the same way `ExShopifyApp.AccessToken.client/1` does:
-  strips a leading `https://` so the stored key matches the host used for requests.
+  Deprecated: use `ExShopifyApp.Shop.normalize_domain/1`. Kept as a thin delegate so
+  existing callers keep working.
   """
   @spec normalize_domain(String.t() | nil) :: String.t() | nil
-  def normalize_domain(nil), do: nil
-
-  def normalize_domain(domain) when is_binary(domain) do
-    String.trim_leading(domain, "https://")
-  end
+  defdelegate normalize_domain(domain), to: Shop
 
   @doc """
   Returns `true` when the access token has hard-expired (within `skew` seconds).
