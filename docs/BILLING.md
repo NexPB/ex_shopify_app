@@ -69,7 +69,7 @@ so a `value` of `0` is rejected upstream; skip the call when there's nothing to 
 
 Authentication is handled for you: the client uses your app's Dev Dashboard credentials
 (`ExShopifyApp.api_key/0` / `api_secret/0`) via the `client_credentials` grant and
-caches the resulting JWT in `:persistent_term`.
+caches the resulting JWT in the supervised `ExShopifyApp.Billing.TokenServer`.
 
 ## Reading the active plan
 
