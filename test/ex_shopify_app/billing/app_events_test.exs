@@ -40,7 +40,7 @@ defmodule ExShopifyApp.Billing.AppEventsTest do
           json_response(%{"accepted" => true}, status: 202)
       end)
 
-      assert {:ok, %{"accepted" => true}} =
+      assert {:ok, :accepted} =
                AppEvents.report(
                  "passes_active",
                  @shop_gid,
