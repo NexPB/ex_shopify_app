@@ -4,6 +4,7 @@ defmodule ExShopifyApp.AccessTokenTest do
   import Mox
   import Tesla.Test
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_json: 2]
 
   alias ExShopifyApp.AccessToken
   alias ExShopifyApp.AccessToken.Token
@@ -50,7 +51,9 @@ defmodule ExShopifyApp.AccessTokenTest do
         times: 1,
         returns: fn %{method: :post, body: body}, _opts ->
           refute Map.has_key?(JSON.decode!(body), "expiring")
-          {:ok, json_response(%{"access_token" => "shpat_x", "scope" => "read_orders"}, status: 200)}
+
+          {:ok,
+           json_response(%{"access_token" => "shpat_x", "scope" => "read_orders"}, status: 200)}
         end
       )
 
@@ -75,7 +78,7 @@ defmodule ExShopifyApp.AccessTokenTest do
     end
 
     test "non-200 returns {:error, env}" do
-      expect_tesla_call(times: 1, returns: json_response(%{"error" => "invalid_subject_token"}, status: 400))
+      expect_http_json(%{"error" => "invalid_subject_token"}, status: 400)
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.fetch(@shop, "session-token")
     end
@@ -100,7 +103,7 @@ defmodule ExShopifyApp.AccessTokenTest do
     end
 
     test "non-200 returns {:error, env}" do
-      expect_tesla_call(times: 1, returns: json_response(%{"error" => "invalid_grant"}, status: 400))
+      expect_http_json(%{"error" => "invalid_grant"}, status: 400)
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.refresh(@shop, "shprt_old")
     end
@@ -136,7 +139,7 @@ defmodule ExShopifyApp.AccessTokenTest do
     end
 
     test "non-200 returns {:error, env}" do
-      expect_tesla_call(times: 1, returns: json_response(%{"error" => "invalid_subject_token"}, status: 400))
+      expect_http_json(%{"error" => "invalid_subject_token"}, status: 400)
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.migrate(@shop, "shpat_lifetime")
     end
