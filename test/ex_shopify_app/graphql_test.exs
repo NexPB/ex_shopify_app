@@ -1,10 +1,12 @@
 defmodule ExShopifyApp.GraphqlTest do
   use ExUnit.Case, async: true
 
-  import Tesla.Mock, only: [mock: 1]
-  import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import Mox
+  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_call: 3]
 
   alias ExShopifyApp.Graphql
+
+  setup :verify_on_exit!
 
   doctest Graphql
 
@@ -12,17 +14,19 @@ defmodule ExShopifyApp.GraphqlTest do
 
   describe "client/2 + query/3" do
     test "posts the query and variables to the Admin GraphQL endpoint" do
-      mock(fn env ->
-        assert env.method == :post
-        assert env.url == "https://shop.myshopify.com/admin/api/2026-01/graphql.json"
-        assert {"x-shopify-access-token", "shpat_123"} in env.headers
+      expect_http_call(
+        fn env ->
+          assert env.method == :post
+          assert env.url == "https://shop.myshopify.com/admin/api/2026-01/graphql.json"
+          assert {"x-shopify-access-token", "shpat_123"} in env.headers
 
-        params = JSON.decode!(env.body)
-        assert params["query"] =~ "currentAppInstallation"
-        assert params["variables"] == %{"id" => "gid://shopify/Shop/1"}
-
-        json_response(%{"data" => %{"ok" => true}}, status: 200)
-      end)
+          params = JSON.decode!(env.body)
+          assert params["query"] =~ "currentAppInstallation"
+          assert params["variables"] == %{"id" => "gid://shopify/Shop/1"}
+        end,
+        %{"data" => %{"ok" => true}},
+        status: 200
+      )
 
       assert {:ok, %Tesla.Env{status: 200, body: body}} =
                @shop
@@ -35,10 +39,13 @@ defmodule ExShopifyApp.GraphqlTest do
     end
 
     test "honours the :api_version option" do
-      mock(fn env ->
-        assert env.url == "https://shop.myshopify.com/admin/api/2025-01/graphql.json"
-        json_response(%{"data" => %{}}, status: 200)
-      end)
+      expect_http_call(
+        fn env ->
+          assert env.url == "https://shop.myshopify.com/admin/api/2025-01/graphql.json"
+        end,
+        %{"data" => %{}},
+        status: 200
+      )
 
       assert {:ok, %Tesla.Env{status: 200}} =
                @shop
@@ -47,10 +54,13 @@ defmodule ExShopifyApp.GraphqlTest do
     end
 
     test "normalizes a domain carrying a leading https://" do
-      mock(fn env ->
-        assert env.url == "https://shop.myshopify.com/admin/api/2026-01/graphql.json"
-        json_response(%{"data" => %{}}, status: 200)
-      end)
+      expect_http_call(
+        fn env ->
+          assert env.url == "https://shop.myshopify.com/admin/api/2026-01/graphql.json"
+        end,
+        %{"data" => %{}},
+        status: 200
+      )
 
       assert {:ok, %Tesla.Env{status: 200}} =
                %{@shop | shopify_domain: "https://shop.myshopify.com"}

@@ -1,33 +1,33 @@
 defmodule ExShopifyApp.Billing.SubscriptionTest do
   use ExUnit.Case, async: true
 
-  import Tesla.Mock, only: [mock: 1]
-  import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import Mox
+  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_json: 2]
 
   alias ExShopifyApp.Billing.Subscription
+
+  setup :verify_on_exit!
 
   @shop %{shopify_domain: "shop.myshopify.com", access_token: "shpat_123"}
 
   describe "fetch_active/1" do
     test "returns the first active subscription as a struct" do
-      mock(fn _ ->
-        json_response(
-          %{
-            "data" => %{
-              "currentAppInstallation" => %{
-                "activeSubscriptions" => [
-                  %{
-                    "name" => "Pop-up",
-                    "status" => "ACTIVE",
-                    "currentPeriodEnd" => "2026-07-28T00:00:00Z"
-                  }
-                ]
-              }
+      expect_http_json(
+        %{
+          "data" => %{
+            "currentAppInstallation" => %{
+              "activeSubscriptions" => [
+                %{
+                  "name" => "Pop-up",
+                  "status" => "ACTIVE",
+                  "currentPeriodEnd" => "2026-07-28T00:00:00Z"
+                }
+              ]
             }
-          },
-          status: 200
-        )
-      end)
+          }
+        },
+        status: 200
+      )
 
       assert {:ok,
               %Subscription{
@@ -38,26 +38,22 @@ defmodule ExShopifyApp.Billing.SubscriptionTest do
     end
 
     test "returns {:error, :no_subscription} when there are no active subscriptions" do
-      mock(fn _ ->
-        json_response(
-          %{"data" => %{"currentAppInstallation" => %{"activeSubscriptions" => []}}},
-          status: 200
-        )
-      end)
+      expect_http_json(
+        %{"data" => %{"currentAppInstallation" => %{"activeSubscriptions" => []}}},
+        status: 200
+      )
 
       assert Subscription.fetch_active(@shop) == {:error, :no_subscription}
     end
 
     test "returns {:error, env} on a non-200 API response" do
-      mock(fn _ -> json_response(%{"errors" => "nope"}, status: 401) end)
+      expect_http_json(%{"errors" => "nope"}, status: 401)
 
       assert {:error, %Tesla.Env{status: 401}} = Subscription.fetch_active(@shop)
     end
 
     test "returns {:error, {:graphql, errors}} when a 200 carries GraphQL errors" do
-      mock(fn _ ->
-        json_response(%{"data" => nil, "errors" => [%{"message" => "throttled"}]}, status: 200)
-      end)
+      expect_http_json(%{"data" => nil, "errors" => [%{"message" => "throttled"}]}, status: 200)
 
       assert {:error, {:graphql, [%{"message" => "throttled"}]}} =
                Subscription.fetch_active(@shop)

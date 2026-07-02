@@ -1,16 +1,20 @@
 defmodule ExShopifyApp.Billing.TokenCacheTest do
-  # async: false — mutates the global :app_events application env and uses the
-  # global Tesla mock, so it must not run concurrently with anything else.
+  # async: false — mutates the global :app_events application env and uses a
+  # global Mox stub, so it must not run concurrently with anything else.
   use ExUnit.Case, async: false
 
-  import Tesla.Mock, only: [mock_global: 1]
+  import Mox
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import ExShopifyApp.HTTPMockHelpers, only: [stub_http: 1]
 
   alias ExShopifyApp.Billing.AppEvents
 
   @token_url "https://api.shopify.com/auth/access_token"
   @events_url "https://api.shopify.com/app/unstable/events"
   @shop_gid "gid://shopify/Shop/123"
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   defmodule StubCache do
     @behaviour ExShopifyApp.Billing.TokenCache
@@ -34,13 +38,13 @@ defmodule ExShopifyApp.Billing.TokenCacheTest do
     end
 
     test "AppEvents.report/5 routes through the configured cache, never hitting the token endpoint" do
-      mock_global(fn
+      stub_http(fn
         %{method: :post, url: @token_url} ->
           flunk("token endpoint should not be called when a custom cache is configured")
 
         %{method: :post, url: @events_url, headers: headers} ->
           assert {"authorization", "Bearer stub-token"} in headers
-          json_response(%{"accepted" => true}, status: 202)
+          {:ok, json_response(%{"accepted" => true}, status: 202)}
       end)
 
       assert {:ok, :accepted} = AppEvents.report("m", @shop_gid, 1, "k")

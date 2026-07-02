@@ -59,7 +59,8 @@ defmodule ExShopifyApp do
     2. `:tesla, :adapter` — Tesla's global config, honoured as a fallback.
     3. `Tesla.Adapter.Mint` — the default.
 
-  The test env routes everything through `Tesla.Mock` via the global Tesla config.
+  The test env routes everything through a Mox-backed mock adapter via the global
+  Tesla config (see `test/support/mocks.ex`).
   """
   @spec tesla_adapter() :: Tesla.Client.adapter()
   def tesla_adapter() do

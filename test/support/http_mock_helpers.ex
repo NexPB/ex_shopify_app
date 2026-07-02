@@ -7,7 +7,8 @@ defmodule ExShopifyApp.HTTPMockHelpers do
   `{:ok, %Tesla.Env{}}` boilerplate for both:
 
     * raw `Mox.stub/3` — `stub_http_json/2` sets a standing fixed response callable any
-      number of times (including zero).
+      number of times (including zero); `stub_http/1` takes a handler function for full
+      control (multi-endpoint routing, per-request assertions, call counting, `flunk`).
     * `Tesla.Test.expect_tesla_call/1` — `expect_http_json/2` wraps the common
       fixed-response, expect-with-verification case, and `expect_http_call/3` adds a
       request-validating callback for tests that assert on the outgoing request.
@@ -17,6 +18,29 @@ defmodule ExShopifyApp.HTTPMockHelpers do
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
 
   @mock ExShopifyApp.HTTPMock
+
+  @doc """
+  Stub the mock adapter with a raw `handler` for full control — when the fixed-response
+  helpers are too coarse (multi-endpoint routing, per-request assertions, call counting,
+  or `flunk`-ing a forbidden endpoint).
+
+  `handler` receives the request `Tesla.Env` and must return the `Tesla.Adapter.call/2`
+  result: `{:ok, %Tesla.Env{}}` (pair with `json_response/2`) or `{:error, reason}`.
+  Callable any number of times. The adapter's `opts` are dropped; reach for `Mox.stub/3`
+  directly if you need them.
+
+      stub_http(fn
+        %{url: "url1"} ->
+          {:ok, json_response(%{"access_token" => "jwt"})}
+
+        %{url: "url2", headers: headers} ->
+          assert {"authorization", "Bearer jwt"} in headers
+          {:ok, json_response(%{"accepted" => true}, status: 202)}
+      end)
+  """
+  def stub_http(handler) when is_function(handler, 1) do
+    stub(@mock, :call, fn env, _opts -> handler.(env) end)
+  end
 
   @doc """
   Stub the mock adapter to return `body` encoded as a JSON `Tesla.Env` for every
