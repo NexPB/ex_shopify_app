@@ -1,14 +1,18 @@
 defmodule ExShopifyApp.AccessToken.RepoTest do
-  # async: false — refreshes use the global Tesla mock (concurrent refreshes run in
-  # spawned processes) and a shared, non-sandboxed Postgres so FOR UPDATE row locks
-  # actually contend across connections.
+  # async: false — refreshes use a global Mox stub (concurrent refreshes run in
+  # spawned processes, so `set_mox_from_context` enables global mode) and a shared,
+  # non-sandboxed Postgres so FOR UPDATE row locks actually contend across connections.
   use ExUnit.Case, async: false
 
+  import Mox
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
 
   alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
   alias ExShopifyApp.{TestRepo, TestStore}
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   setup do
     TestRepo.delete_all(Token)
@@ -69,20 +73,21 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   defp mock_refresh(counter, opts \\ []) do
     delay = Keyword.get(opts, :delay, 0)
 
-    Tesla.Mock.mock_global(fn %{method: :post} ->
+    stub(ExShopifyApp.MockTeslaAdapter, :call, fn %{method: :post}, _opts ->
       Agent.update(counter, &(&1 + 1))
       if delay > 0, do: Process.sleep(delay)
 
-      json_response(
-        %{
-          "access_token" => "shpat_new",
-          "scope" => "read_orders",
-          "expires_in" => 3600,
-          "refresh_token" => "shprt_new",
-          "refresh_token_expires_in" => 7_776_000
-        },
-        status: 200
-      )
+      {:ok,
+       json_response(
+         %{
+           "access_token" => "shpat_new",
+           "scope" => "read_orders",
+           "expires_in" => 3600,
+           "refresh_token" => "shprt_new",
+           "refresh_token_expires_in" => 7_776_000
+         },
+         status: 200
+       )}
     end)
   end
 
@@ -179,8 +184,8 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       domain = "ig.myshopify.com"
       store(domain, issued: hours_ago(2))
 
-      Tesla.Mock.mock_global(fn _ ->
-        json_response(%{"error" => "invalid_grant"}, status: 400)
+      stub(ExShopifyApp.MockTeslaAdapter, :call, fn _env, _opts ->
+        {:ok, json_response(%{"error" => "invalid_grant"}, status: 400)}
       end)
 
       assert {:error, :reauthorization_required} =
@@ -192,7 +197,9 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     test "a 5xx maps to {:refresh_failed, _}, leaves the token, and records last_refresh_error" do
       domain = "boom.myshopify.com"
       store(domain, issued: hours_ago(2))
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub(ExShopifyApp.MockTeslaAdapter, :call, fn _env, _opts ->
+        {:ok, json_response(%{"error" => "server"}, status: 503)}
+      end)
 
       assert {:error, {:refresh_failed, %Tesla.Env{status: 503}}} =
                TestStore.refresh_token(%{shopify_domain: domain})
@@ -206,7 +213,9 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     test "stale_while_error returns the still-valid token when a refresh fails" do
       domain = "swr.myshopify.com"
       store(domain, issued: DateTime.add(DateTime.utc_now(), -3300, :second))
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub(ExShopifyApp.MockTeslaAdapter, :call, fn _env, _opts ->
+        {:ok, json_response(%{"error" => "server"}, status: 503)}
+      end)
 
       assert {:ok, %Token{access_token: "shpat_old"}} =
                TestStore.valid_token(%{shopify_domain: domain},
@@ -266,7 +275,9 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     test "a Shopify error leaves the lifetime token unchanged and records last_refresh_error" do
       domain = "migfail.myshopify.com"
       store_lifetime(domain)
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub(ExShopifyApp.MockTeslaAdapter, :call, fn _env, _opts ->
+        {:ok, json_response(%{"error" => "server"}, status: 503)}
+      end)
 
       assert {:error, {:refresh_failed, %Tesla.Env{status: 503}}} =
                TestStore.migrate_token(%{shopify_domain: domain})
