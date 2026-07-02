@@ -1,14 +1,19 @@
 defmodule ExShopifyApp.AccessToken.RepoTest do
-  # async: false — refreshes use the global Tesla mock (concurrent refreshes run in
-  # spawned processes) and a shared, non-sandboxed Postgres so FOR UPDATE row locks
-  # actually contend across connections.
+  # async: false — refreshes use a global Mox stub (concurrent refreshes run in
+  # spawned processes, so `set_mox_from_context` enables global mode) and a shared,
+  # non-sandboxed Postgres so FOR UPDATE row locks actually contend across connections.
   use ExUnit.Case, async: false
 
+  import Mox
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import ExShopifyApp.HTTPMockHelpers, only: [stub_http_json: 2]
 
   alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
   alias ExShopifyApp.{TestRepo, TestStore}
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   setup do
     TestRepo.delete_all(Token)
@@ -64,29 +69,33 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     token
   end
 
-  defp calls(counter), do: Agent.get(counter, & &1)
+  defp hours_ago(h), do: DateTime.add(DateTime.utc_now(), -h, :hour)
 
-  defp mock_refresh(counter, opts \\ []) do
+  # Stub POST refreshes with a successful token response, bumping the `counter` (from
+  # setup, read via `calls/1`) on every call so a test can assert how many refreshes
+  # actually hit Shopify. `:delay` (ms) widens the race window for the concurrency tests.
+  defp stub_refresh(counter, opts \\ []) do
     delay = Keyword.get(opts, :delay, 0)
 
-    Tesla.Mock.mock_global(fn %{method: :post} ->
+    stub(ExShopifyApp.HTTPMock, :call, fn %{method: :post}, _opts ->
       Agent.update(counter, &(&1 + 1))
       if delay > 0, do: Process.sleep(delay)
 
-      json_response(
-        %{
-          "access_token" => "shpat_new",
-          "scope" => "read_orders",
-          "expires_in" => 3600,
-          "refresh_token" => "shprt_new",
-          "refresh_token_expires_in" => 7_776_000
-        },
-        status: 200
-      )
+      {:ok,
+       json_response(
+         %{
+           "access_token" => "shpat_new",
+           "scope" => "read_orders",
+           "expires_in" => 3600,
+           "refresh_token" => "shprt_new",
+           "refresh_token_expires_in" => 7_776_000
+         },
+         status: 200
+       )}
     end)
   end
 
-  defp hours_ago(h), do: DateTime.add(DateTime.utc_now(), -h, :hour)
+  defp calls(counter), do: Agent.get(counter, & &1)
 
   # --- put_token / fetch_token ----------------------------------------------
 
@@ -120,19 +129,19 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       assert {:error, :no_token} = TestStore.valid_token(%{shopify_domain: "nope.myshopify.com"})
     end
 
-    test "a fresh token is returned without an HTTP call", %{counter: counter} do
-      mock_refresh(counter)
+    test "a fresh token is returned without an HTTP call", ctx do
+      stub_refresh(ctx.counter)
       domain = "fresh.myshopify.com"
       store(domain, access_token: "shpat_fresh")
 
       assert {:ok, %Token{access_token: "shpat_fresh", refresh_generation: 0}} =
                TestStore.valid_token(%{shopify_domain: domain})
 
-      assert calls(counter) == 0
+      assert calls(ctx.counter) == 0
     end
 
-    test "a hard-expired token refreshes and persists before returning", %{counter: counter} do
-      mock_refresh(counter)
+    test "a hard-expired token refreshes and persists before returning", ctx do
+      stub_refresh(ctx.counter)
       domain = "expired.myshopify.com"
       store(domain, issued: hours_ago(2))
 
@@ -140,13 +149,13 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
               %Token{access_token: "shpat_new", refresh_token: "shprt_new", refresh_generation: 1}} =
                TestStore.valid_token(%{shopify_domain: domain})
 
-      assert calls(counter) == 1
+      assert calls(ctx.counter) == 1
       # Persisted before returning.
       assert %Token{refresh_token: "shprt_new", refresh_generation: 1} = stored(domain)
     end
 
-    test "a stale token refreshes synchronously and persists by default", %{counter: counter} do
-      mock_refresh(counter)
+    test "a stale token refreshes synchronously and persists by default", ctx do
+      stub_refresh(ctx.counter)
       domain = "stale.myshopify.com"
       # 3300s into a 3600s lifetime: inside the soft window, not yet hard-expired.
       store(domain, issued: DateTime.add(DateTime.utc_now(), -3300, :second))
@@ -154,21 +163,19 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       assert {:ok, %Token{access_token: "shpat_new"}} =
                TestStore.valid_token(%{shopify_domain: domain}, soft_window: [jitter: 0])
 
-      assert calls(counter) == 1
+      assert calls(ctx.counter) == 1
       assert %Token{refresh_token: "shprt_new"} = stored(domain)
     end
 
-    test "an expired refresh token returns :reauthorization_required without an HTTP call", %{
-      counter: counter
-    } do
-      mock_refresh(counter)
+    test "an expired refresh token returns :reauthorization_required without an HTTP call", ctx do
+      stub_refresh(ctx.counter)
       domain = "dead.myshopify.com"
       store(domain, issued: hours_ago(3000), rt_expires_in: 7_776_000)
 
       assert {:error, :reauthorization_required} =
                TestStore.valid_token(%{shopify_domain: domain})
 
-      assert calls(counter) == 0
+      assert calls(ctx.counter) == 0
     end
   end
 
@@ -179,9 +186,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       domain = "ig.myshopify.com"
       store(domain, issued: hours_ago(2))
 
-      Tesla.Mock.mock_global(fn _ ->
-        json_response(%{"error" => "invalid_grant"}, status: 400)
-      end)
+      stub_http_json(%{"error" => "invalid_grant"}, status: 400)
 
       assert {:error, :reauthorization_required} =
                TestStore.refresh_token(%{shopify_domain: domain})
@@ -192,7 +197,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     test "a 5xx maps to {:refresh_failed, _}, leaves the token, and records last_refresh_error" do
       domain = "boom.myshopify.com"
       store(domain, issued: hours_ago(2))
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub_http_json(%{"error" => "server"}, status: 503)
 
       assert {:error, {:refresh_failed, %Tesla.Env{status: 503}}} =
                TestStore.refresh_token(%{shopify_domain: domain})
@@ -206,7 +211,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     test "stale_while_error returns the still-valid token when a refresh fails" do
       domain = "swr.myshopify.com"
       store(domain, issued: DateTime.add(DateTime.utc_now(), -3300, :second))
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub_http_json(%{"error" => "server"}, status: 503)
 
       assert {:ok, %Token{access_token: "shpat_old"}} =
                TestStore.valid_token(%{shopify_domain: domain},
@@ -219,10 +224,8 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   # --- migrate_token ----------------------------------------------------------
 
   describe "migrate_token/2" do
-    test "migrates a lifetime token to an expiring one and persists before returning", %{
-      counter: counter
-    } do
-      mock_refresh(counter)
+    test "migrates a lifetime token to an expiring one and persists before returning", ctx do
+      stub_refresh(ctx.counter)
       domain = "lifetime.myshopify.com"
       store_lifetime(domain)
 
@@ -236,37 +239,35 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
       assert not is_nil(migrated.expires_at)
       assert not is_nil(migrated.refresh_token_expires_at)
-      assert calls(counter) == 1
+      assert calls(ctx.counter) == 1
 
       assert %Token{refresh_token: "shprt_new", refresh_generation: 1} = stored(domain)
     end
 
-    test "is idempotent: an already-expiring token is returned with no Shopify call", %{
-      counter: counter
-    } do
-      mock_refresh(counter)
+    test "is idempotent: an already-expiring token is returned with no Shopify call", ctx do
+      stub_refresh(ctx.counter)
       domain = "already.myshopify.com"
       store(domain, access_token: "shpat_expiring")
 
       assert {:ok, %Token{access_token: "shpat_expiring", refresh_generation: 0}} =
                TestStore.migrate_token(%{shopify_domain: domain})
 
-      assert calls(counter) == 0
+      assert calls(ctx.counter) == 0
     end
 
-    test "no stored token returns {:error, :no_token}", %{counter: counter} do
-      mock_refresh(counter)
+    test "no stored token returns {:error, :no_token}", ctx do
+      stub_refresh(ctx.counter)
 
       assert {:error, :no_token} =
                TestStore.migrate_token(%{shopify_domain: "nope.myshopify.com"})
 
-      assert calls(counter) == 0
+      assert calls(ctx.counter) == 0
     end
 
     test "a Shopify error leaves the lifetime token unchanged and records last_refresh_error" do
       domain = "migfail.myshopify.com"
       store_lifetime(domain)
-      Tesla.Mock.mock_global(fn _ -> json_response(%{"error" => "server"}, status: 503) end)
+      stub_http_json(%{"error" => "server"}, status: 503)
 
       assert {:error, {:refresh_failed, %Tesla.Env{status: 503}}} =
                TestStore.migrate_token(%{shopify_domain: domain})
@@ -278,14 +279,12 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       assert token.last_refresh_error =~ "refresh_failed:http_503"
     end
 
-    test "concurrent migrations for one shop produce exactly one Shopify call", %{
-      counter: counter
-    } do
+    test "concurrent migrations for one shop produce exactly one Shopify call", ctx do
       domain = "migconcurrent.myshopify.com"
       store_lifetime(domain)
       # The row-lock winner migrates; the other nine find the token already expiring and
       # make no call.
-      mock_refresh(counter, delay: 30)
+      stub_refresh(ctx.counter, delay: 30)
 
       results =
         1..10
@@ -296,7 +295,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
         |> Enum.map(fn {:ok, res} -> res end)
 
       assert Enum.all?(results, &match?({:ok, %Token{refresh_token: "shprt_new"}}, &1))
-      assert calls(counter) == 1
+      assert calls(ctx.counter) == 1
       assert %Token{refresh_generation: 1} = stored(domain)
     end
   end
@@ -304,12 +303,10 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   # --- concurrency ------------------------------------------------------------
 
   describe "concurrent refreshes" do
-    test "for one shop produce exactly one Shopify call and one generation bump", %{
-      counter: counter
-    } do
+    test "for one shop produce exactly one Shopify call and one generation bump", ctx do
       domain = "concurrent.myshopify.com"
       store(domain, issued: hours_ago(2))
-      mock_refresh(counter, delay: 30)
+      stub_refresh(ctx.counter, delay: 30)
 
       results =
         1..10
@@ -320,32 +317,30 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
         |> Enum.map(fn {:ok, res} -> res end)
 
       assert Enum.all?(results, &match?({:ok, %Token{refresh_token: "shprt_new"}}, &1))
-      assert calls(counter) == 1
+      assert calls(ctx.counter) == 1
       assert %Token{refresh_generation: 1} = stored(domain)
     end
 
-    test "for different shops proceed independently", %{counter: counter} do
+    test "for different shops proceed independently", ctx do
       store("a.myshopify.com", issued: hours_ago(2))
       store("b.myshopify.com", issued: hours_ago(2))
-      mock_refresh(counter, delay: 10)
+      stub_refresh(ctx.counter, delay: 10)
 
       t1 = Task.async(fn -> TestStore.refresh_token(%{shopify_domain: "a.myshopify.com"}) end)
       t2 = Task.async(fn -> TestStore.refresh_token(%{shopify_domain: "b.myshopify.com"}) end)
 
       assert {:ok, %Token{}} = Task.await(t1)
       assert {:ok, %Token{}} = Task.await(t2)
-      assert calls(counter) == 2
+      assert calls(ctx.counter) == 2
     end
   end
 
   # --- persistence failure after a successful refresh ------------------------
 
-  test "persistence failure after Shopify success is critical and emits telemetry", %{
-    counter: counter
-  } do
+  test "persistence failure after Shopify success is critical and emits telemetry", ctx do
     domain = "persistfail.myshopify.com"
     store(domain, issued: hours_ago(2))
-    mock_refresh(counter)
+    stub_refresh(ctx.counter)
 
     handler = "persist-failed-#{System.unique_integer([:positive])}"
     test_pid = self()
@@ -369,17 +364,17 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
              ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
 
     # Shopify was called, but the row is untouched (rolled back).
-    assert calls(counter) == 1
+    assert calls(ctx.counter) == 1
     assert %Token{refresh_token: "shprt_old", refresh_generation: 0} = stored(domain)
 
     assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
                     _m, %{shopify_domain: ^domain}}
   end
 
-  test "migrate persistence failure surfaces the exchanged token for retry", %{counter: counter} do
+  test "migrate persistence failure surfaces the exchanged token for retry", ctx do
     domain = "migpersistfail.myshopify.com"
     store_lifetime(domain)
-    mock_refresh(counter)
+    stub_refresh(ctx.counter)
 
     assert {:error,
             {:token_persistence_failed_after_refresh,
@@ -390,7 +385,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     # re-persist; without this the exchanged token would be lost.
     assert token.refresh_token == "shprt_new"
     assert not is_nil(token.expires_at)
-    assert calls(counter) == 1
+    assert calls(ctx.counter) == 1
 
     # The row is untouched (rolled back) — still the lifetime token.
     assert %Token{access_token: "shpat_lifetime", expires_at: nil} = stored(domain)
