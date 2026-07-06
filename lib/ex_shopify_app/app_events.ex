@@ -18,40 +18,29 @@ defmodule ExShopifyApp.AppEvents do
   Docs: <https://shopify.dev/docs/apps/build/app-events>
   """
 
+  alias ExShopifyApp.AppEvents.Event
   alias ExShopifyApp.HTTP
+  alias ExShopifyApp.Shop
 
   @doc """
   Reports a usage event to Shopify.
 
-    * `event_handle` - must match a usage meter handle from the pricing config.
-    * `shop_gid` - the Shop GID, e.g. `"gid://shopify/Shop/123"` (see
-      `ExShopifyApp.Graphql.ensure_gid/2`).
-    * `value` - the usage amount (must be `> 0` to be billed).
-    * `idempotency_key` - stable key deduping the event. Billing events are
-      permanently deduped, so the key must be stable per billing period; the caller
-      owns this.
+  `event` is an `ExShopifyApp.AppEvents.Event` — see that struct for field
+  semantics, in particular the idempotency-key contract. `shop` is any map
+  carrying the shop's `:shop_gid` (see `t:ExShopifyApp.Shop.identified/0` and
+  `ExShopifyApp.Graphql.ensure_gid/2`). The event comes first so builders pipe in:
 
-  ## Options
-
-    * `:timestamp` - the event `DateTime`, defaults to `DateTime.utc_now/0`.
+      Event.new(%{event_handle: "orders_processed", value: 1, idempotency_key: order_gid})
+      |> AppEvents.report(shop)
 
   The API acknowledges receipt with `202` regardless of billing validation.
   Returns `{:ok, :accepted}` on `202`, `{:error, %Tesla.Env{}}` on any other response,
   or `{:error, reason}` on a transport error.
   """
-  @spec report(String.t(), String.t(), number(), String.t(), keyword()) ::
-          {:ok, :accepted} | {:error, any()}
-  def report(event_handle, shop_gid, value, idempotency_key, opts \\ []) do
+  @spec report(Event.t(), Shop.identified()) :: {:ok, :accepted} | {:error, any()}
+  def report(%Event{} = event, %{shop_gid: shop_gid}) do
     with {:ok, token} <- ExShopifyApp.app_events_config()[:token_cache].fetch() do
-      timestamp = Keyword.get(opts, :timestamp, DateTime.utc_now())
-
-      body = %{
-        "shop_id" => shop_gid,
-        "event_handle" => event_handle,
-        "timestamp" => DateTime.to_iso8601(timestamp),
-        "idempotency_key" => idempotency_key,
-        "attributes" => %{"value" => value}
-      }
+      body = Event.to_api_input(event, shop_gid)
 
       token
       |> client()

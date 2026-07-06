@@ -37,7 +37,7 @@ defmodule ExShopifyApp.AppEvents.TokenCacheTest do
       end)
     end
 
-    test "AppEvents.report/5 routes through the configured cache, never hitting the token endpoint" do
+    test "AppEvents.report/2 routes through the configured cache, never hitting the token endpoint" do
       stub_http(fn
         %{method: :post, url: @token_url} ->
           flunk("token endpoint should not be called when a custom cache is configured")
@@ -47,7 +47,9 @@ defmodule ExShopifyApp.AppEvents.TokenCacheTest do
           {:ok, json_response(%{"accepted" => true}, status: 202)}
       end)
 
-      assert {:ok, :accepted} = AppEvents.report("m", @shop_gid, 1, "k")
+      assert {:ok, :accepted} =
+               %AppEvents.Event{event_handle: "m", value: 1, idempotency_key: "k"}
+               |> AppEvents.report(%{shop_gid: @shop_gid})
     end
   end
 

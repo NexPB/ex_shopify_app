@@ -26,20 +26,25 @@ action, using that action's own identifier as the idempotency key:
 alias ExShopifyApp.AppEvents
 alias ExShopifyApp.Graphql
 
-shop_gid = Graphql.ensure_gid(shop_id, "shop")
+shop = %{shop_gid: Graphql.ensure_gid(shop_id, "shop")}
 
 # Report one event each time the merchant processes an order. The order's GID is a
 # naturally stable key, so a retry never double-counts; for a billing meter Shopify
 # sums the events across the billing cycle.
-AppEvents.report("orders_processed", shop_gid, 1, order_gid)
+%{event_handle: "orders_processed", value: 1, idempotency_key: order_gid}
+|> AppEvents.Event.new()
+|> AppEvents.report(shop)
 ```
+
+`report/2` takes the shop as any map carrying a `:shop_gid` — a bare map as above,
+or your own shop schema if it exposes that field.
 
 If instead you report a periodic *total* (rather than per-action increments) against a
 billing meter, scope the idempotency key to the billing cycle (e.g. the subscription's
 `current_period_end` from `ExShopifyApp.Billing.Subscription.fetch_active/1`) so the
 event lands exactly once per cycle.
 
-`report/5` returns `{:ok, body}` on the API's `202` acknowledgement, or
+`report/2` returns `{:ok, body}` on the API's `202` acknowledgement, or
 `{:error, reason}`. Shopify acknowledges with `202` regardless of validation, so a
 `value` of `0` is rejected upstream; skip the call when there's nothing to report.
 

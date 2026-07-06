@@ -10,6 +10,7 @@ defmodule ExShopifyApp.AppEventsTest do
   import ExShopifyApp.HTTPMockHelpers, only: [stub_http: 1]
 
   alias ExShopifyApp.AppEvents
+  alias ExShopifyApp.AppEvents.Event
   alias ExShopifyApp.AppEvents.TokenServer
 
   @token_url "https://api.shopify.com/auth/access_token"
@@ -24,7 +25,7 @@ defmodule ExShopifyApp.AppEventsTest do
     :ok
   end
 
-  describe "report/5" do
+  describe "report/2" do
     test "fetches a token then posts the usage event, returning {:ok, body} on 202" do
       stub_http(fn
         %{method: :post, url: @token_url, body: body} ->
@@ -46,13 +47,13 @@ defmodule ExShopifyApp.AppEventsTest do
       end)
 
       assert {:ok, :accepted} =
-               AppEvents.report(
-                 "passes_active",
-                 @shop_gid,
-                 7,
-                 "passes_active:1:2026-06",
+               %Event{
+                 event_handle: "passes_active",
+                 value: 7,
+                 idempotency_key: "passes_active:1:2026-06",
                  timestamp: ~U[2026-06-28 00:00:00Z]
-               )
+               }
+               |> AppEvents.report(%{shop_gid: @shop_gid})
     end
 
     test "returns {:error, _} on a non-202 event response" do
@@ -64,7 +65,7 @@ defmodule ExShopifyApp.AppEventsTest do
           {:ok, json_response(%{"error" => "bad"}, status: 422)}
       end)
 
-      assert {:error, %Tesla.Env{status: 422}} = AppEvents.report("m", @shop_gid, 1, "k")
+      assert {:error, %Tesla.Env{status: 422}} = report_event(1, "k")
     end
 
     test "caches the token across reports, fetching it only once" do
@@ -79,8 +80,8 @@ defmodule ExShopifyApp.AppEventsTest do
           {:ok, json_response(%{"accepted" => true}, status: 202)}
       end)
 
-      assert {:ok, _} = AppEvents.report("m", @shop_gid, 1, "k1")
-      assert {:ok, _} = AppEvents.report("m", @shop_gid, 2, "k2")
+      assert {:ok, _} = report_event(1, "k1")
+      assert {:ok, _} = report_event(2, "k2")
 
       assert :counters.get(counter, 1) == 1
     end
@@ -90,7 +91,12 @@ defmodule ExShopifyApp.AppEventsTest do
         {:ok, json_response(%{"error" => "invalid_client"}, status: 401)}
       end)
 
-      assert {:error, %Tesla.Env{status: 401}} = AppEvents.report("m", @shop_gid, 1, "k")
+      assert {:error, %Tesla.Env{status: 401}} = report_event(1, "k")
     end
+  end
+
+  defp report_event(value, idempotency_key) do
+    %Event{event_handle: "m", value: value, idempotency_key: idempotency_key}
+    |> AppEvents.report(%{shop_gid: @shop_gid})
   end
 end

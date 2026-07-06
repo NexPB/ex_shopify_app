@@ -2,7 +2,7 @@ defmodule ExShopifyApp.Shop do
   @moduledoc """
   Shop references and shop-domain helpers shared across the library.
 
-  Two shapes of shop reference recur throughout the API:
+  A few shapes of shop reference recur throughout the API:
 
     * `t/0` — a shop identified by its `:shopify_domain` only. Enough to look up,
       refresh, or migrate a stored access token.
@@ -10,6 +10,9 @@ defmodule ExShopifyApp.Shop do
       `:access_token`, ready to authenticate Admin API requests. The
       `ExShopifyApp.AccessToken.Token` struct satisfies this shape, so it can be passed
       directly; any map exposing both fields works too.
+    * `identified/0` — a shop carrying its `:shop_gid`, the shape Shopify's
+      shop-global APIs (e.g. App Events) address shops by. See
+      `ExShopifyApp.Graphql.ensure_gid/2` for building one from a numeric ID.
   """
 
   @typedoc "A shop reference carrying at least its `:shopify_domain`."
@@ -17,6 +20,9 @@ defmodule ExShopifyApp.Shop do
 
   @typedoc "A shop reference carrying its `:shopify_domain` and offline `:access_token`."
   @type authorized :: %{shopify_domain: String.t(), access_token: String.t()}
+
+  @typedoc "A shop reference carrying its `:shop_gid`, e.g. `\"gid://shopify/Shop/123\"`."
+  @type identified :: %{shop_gid: String.t()}
 
   @doc """
   Normalizes a shop domain the same way `ExShopifyApp.AccessToken.client/1` does:
