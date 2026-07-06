@@ -69,9 +69,11 @@ defmodule ExShopifyApp.Billing do
     normalized_domain = Shop.normalize_domain(shopify_domain)
 
     store_handle =
-      case normalized_domain do
-        <<handle::binary, ".myshopify.com">> -> handle
-        other -> raise ArgumentError, "expected shopify_domain to end with .myshopify.com, got: #{inspect(other)}"
+      if String.ends_with?(normalized_domain, ".myshopify.com") do
+        String.replace_suffix(normalized_domain, ".myshopify.com", "")
+      else
+        raise ArgumentError,
+              "expected shopify_domain to end with .myshopify.com, got: #{inspect(normalized_domain)}"
       end
 
     "https://admin.shopify.com/store/#{store_handle}/charges/#{app_handle}/pricing_plans"
