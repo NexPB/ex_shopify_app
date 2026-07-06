@@ -39,10 +39,8 @@ defmodule ExShopifyApp.AppEvents.Event do
           keyword()
         ) :: t()
   def new(%{event_handle: _, value: _, idempotency_key: _} = fields, opts \\ []) do
-    fields
-    |> Map.merge(Map.new(opts))
-    |> Map.put_new_lazy(:timestamp, &DateTime.utc_now/0)
-    |> then(&struct!(__MODULE__, &1))
+    timestamp = Keyword.get_lazy(opts, :timestamp, &DateTime.utc_now/0)
+    struct!(__MODULE__, Map.put(fields, :timestamp, timestamp))
   end
 
   @doc """
