@@ -132,12 +132,18 @@ exchange would fail because Shopify has already invalidated the prior token.
 Metadata carries `:shopify_domain`, `:refresh_generation`, and a `:result`
 classification, never token values.
 
+## App Events
+
+Report usage events through Shopify's App Events API, keyed by meter handle. Meters can
+be billing *or* tracking-only (analytics). See [docs/APP_EVENTS.md](docs/APP_EVENTS.md); the entry point
+is `ExShopifyApp.AppEvents`.
+
 ## Billing
 
-Shopify-native metered billing: report usage through the App Events API and read the
-merchant's active plan from the Admin API. See [docs/BILLING.md](docs/BILLING.md) for
-the full guide; the entry points are `ExShopifyApp.Billing`,
-`ExShopifyApp.Billing.AppEvents`, and `ExShopifyApp.Billing.Subscription`.
+Shopify-native metered billing: report usage through [App Events](docs/APP_EVENTS.md) and
+read the merchant's active plan from the Admin API. See [docs/BILLING.md](docs/BILLING.md)
+for the full guide; the entry points are `ExShopifyApp.Billing` and
+`ExShopifyApp.Billing.Subscription`.
 
 ## Docs
 

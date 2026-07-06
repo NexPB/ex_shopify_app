@@ -1,4 +1,4 @@
-defmodule ExShopifyApp.Billing.AppEvents do
+defmodule ExShopifyApp.AppEvents do
   @moduledoc """
   Client for the Shopify App Events API, used to report usage events.
 
@@ -11,8 +11,8 @@ defmodule ExShopifyApp.Billing.AppEvents do
   Authentication uses the app's Dev Dashboard credentials
   (`ExShopifyApp.api_key/0` / `ExShopifyApp.api_secret/0`) via the
   `client_credentials` grant — see `fetch_token/0` for the raw request. The resulting
-  JWT is valid ~60 min and cached by the configured `ExShopifyApp.Billing.TokenCache`
-  implementation (default `ExShopifyApp.Billing.TokenServer`) until shortly before it
+  JWT is valid ~60 min and cached by the configured `ExShopifyApp.AppEvents.TokenCache`
+  implementation (default `ExShopifyApp.AppEvents.TokenServer`) until shortly before it
   expires.
 
   Docs: <https://shopify.dev/docs/apps/build/app-events>
@@ -67,8 +67,8 @@ defmodule ExShopifyApp.Billing.AppEvents do
   This is the raw primitive: it performs the token request and returns
   `{:ok, token, expires_in_seconds}` straight from Shopify, `{:error, %Tesla.Env{}}` on a
   non-200 (or a 200 without a token), or `{:error, reason}` on a transport error. It does
-  no caching — for cached access use the configured `ExShopifyApp.Billing.TokenCache`
-  (default `ExShopifyApp.Billing.TokenServer`), which wraps this.
+  no caching — for cached access use the configured `ExShopifyApp.AppEvents.TokenCache`
+  (default `ExShopifyApp.AppEvents.TokenServer`), which wraps this.
   """
   @spec fetch_token() :: {:ok, String.t(), non_neg_integer()} | {:error, any()}
   def fetch_token do

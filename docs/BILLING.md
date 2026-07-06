@@ -9,7 +9,7 @@ plumbing; your app keeps the *policy*.
 
 | Concern | Owner |
 | --- | --- |
-| Reporting usage events | **library** (`ExShopifyApp.Billing.AppEvents`) |
+| Reporting usage events | **library** (`ExShopifyApp.AppEvents` — see [App Events](APP_EVENTS.md)) |
 | Reading the active subscription | **library** (`ExShopifyApp.Billing.Subscription`) |
 | Admin GraphQL client + GID helpers | **library** (`ExShopifyApp.Graphql`) |
 | Hosted pricing-page URL | **library** (`ExShopifyApp.Billing.pricing_url/2`) |
@@ -32,63 +32,17 @@ both fields, so it can be passed directly; so can any map/struct exposing them:
 shop = %{shopify_domain: "acme.myshopify.com", access_token: "shpat_…"}
 ```
 
-## Reporting usage
+## Reporting metered usage
 
-Usage is reported against the meters configured on your Shopify pricing plans, keyed by
-`event_handle` (which must match a meter handle exactly). By convention meters are one
-of two kinds:
+Metered charges are driven by **billing meters**, which are reported through the App
+Events API via `ExShopifyApp.AppEvents` — the same client used for tracking-only
+(analytics) meters. The how-to, the idempotency-key rules, and token-cache config live in
+its own guide: **[App Events](APP_EVENTS.md)**.
 
-- **Billing meter**: the reported value drives the metered charge. Shopify *sums* the
-  events within a billing cycle, and permanently dedupes them on the `idempotency_key`,
-  so the key must be stable: a retry must reuse the same key to avoid double-charging.
-- **Tracking-only meter**: reported for visibility, never billed.
-
-The most common pattern is to bill one unit per chargeable action, using that action's
-own identifier as the idempotency key:
-
-```elixir
-alias ExShopifyApp.Billing.AppEvents
-alias ExShopifyApp.Graphql
-
-shop_gid = Graphql.ensure_gid(shop_id, "shop")
-
-# Bill one unit each time the merchant processes an order. The order's GID is a
-# naturally stable key, so a retry never double-charges; Shopify sums the events
-# across the billing cycle.
-AppEvents.report("orders_processed", shop_gid, 1, order_gid)
-```
-
-If instead you report a periodic *total* (rather than per-action increments), scope the
-idempotency key to the billing cycle (e.g. the subscription's `current_period_end` from
-`ExShopifyApp.Billing.Subscription.fetch_active/1`) so the event lands exactly once per
-cycle.
-
-`report/5` returns `{:ok, body}` on the API's `202` acknowledgement, or
-`{:error, reason}`. Shopify acknowledges with `202` regardless of billing validation,
-so a `value` of `0` is rejected upstream; skip the call when there's nothing to report.
-
-Authentication is handled for you: the client uses your app's Dev Dashboard credentials
-(`ExShopifyApp.api_key/0` / `api_secret/0`) via the `client_credentials` grant and
-caches the resulting JWT in the configured `ExShopifyApp.Billing.TokenCache`. The default
-implementation, `ExShopifyApp.Billing.TokenServer`, is a supervised GenServer that
-serializes refreshes so concurrent first-callers coalesce onto a single token fetch.
-
-### Custom token cache
-
-The token source is pluggable via the `:app_events` config group. Point `:token_cache`
-at any module implementing the `ExShopifyApp.Billing.TokenCache` behaviour — for example
-a Cachex/ETS TTL cache if you'd rather have non-blocking reads than serialized refreshes:
-
-```elixir
-config :ex_shopify_app, :app_events, token_cache: MyApp.TokenCache
-```
-
-By default the library auto-supervises the `:token_cache` module. If you start it yourself,
-opt out:
-
-```elixir
-config :ex_shopify_app, :app_events, start_token_cache: false
-```
+The short version for billing: report against the meter configured on your pricing plan,
+keyed by `event_handle`, with a *stable* idempotency key so retries never double-charge.
+For a periodic total, scope that key to the billing cycle (e.g. the subscription's
+`current_period_end` from `ExShopifyApp.Billing.Subscription.fetch_active/1`).
 
 ## Reading the active plan
 

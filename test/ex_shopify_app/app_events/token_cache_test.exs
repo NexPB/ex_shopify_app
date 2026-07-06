@@ -1,4 +1,4 @@
-defmodule ExShopifyApp.Billing.TokenCacheTest do
+defmodule ExShopifyApp.AppEvents.TokenCacheTest do
   # async: false — mutates the global :app_events application env and uses a
   # global Mox stub, so it must not run concurrently with anything else.
   use ExUnit.Case, async: false
@@ -7,7 +7,7 @@ defmodule ExShopifyApp.Billing.TokenCacheTest do
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
   import ExShopifyApp.HTTPMockHelpers, only: [stub_http: 1]
 
-  alias ExShopifyApp.Billing.AppEvents
+  alias ExShopifyApp.AppEvents
 
   @token_url "https://api.shopify.com/auth/access_token"
   @events_url "https://api.shopify.com/app/unstable/events"
@@ -17,7 +17,7 @@ defmodule ExShopifyApp.Billing.TokenCacheTest do
   setup :verify_on_exit!
 
   defmodule StubCache do
-    @behaviour ExShopifyApp.Billing.TokenCache
+    @behaviour ExShopifyApp.AppEvents.TokenCache
 
     @impl true
     def fetch, do: {:ok, "stub-token"}
@@ -57,7 +57,7 @@ defmodule ExShopifyApp.Billing.TokenCacheTest do
       on_exit(fn -> Application.delete_env(:ex_shopify_app, :app_events) end)
 
       config = ExShopifyApp.app_events_config()
-      assert config[:token_cache] == ExShopifyApp.Billing.TokenServer
+      assert config[:token_cache] == ExShopifyApp.AppEvents.TokenServer
       assert config[:start_token_cache] == true
     end
 

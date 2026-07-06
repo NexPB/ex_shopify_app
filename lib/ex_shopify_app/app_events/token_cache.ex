@@ -1,10 +1,10 @@
-defmodule ExShopifyApp.Billing.TokenCache do
+defmodule ExShopifyApp.AppEvents.TokenCache do
   @moduledoc """
   Behaviour for a cached Shopify app events access-token source.
 
-  `ExShopifyApp.Billing.AppEvents` resolves the configured implementation via
+  `ExShopifyApp.AppEvents` resolves the configured implementation via
   `ExShopifyApp.app_events_config/0` and calls `fetch/0` on it. The default
-  implementation is `ExShopifyApp.Billing.TokenServer`, a supervised GenServer that
+  implementation is `ExShopifyApp.AppEvents.TokenServer`, a supervised GenServer that
   serializes token refreshes so concurrent first-callers coalesce onto a single token
   fetch. Swap it for your own (e.g. a Cachex/ETS TTL cache with non-blocking reads):
 

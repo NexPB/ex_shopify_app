@@ -5,10 +5,13 @@ defmodule ExShopifyApp.Billing do
   This is the library's billing entry point. It provides the reusable pieces of a
   Shopify App Pricing integration and leaves the per-app *policy* to the host:
 
-    * `ExShopifyApp.Billing.AppEvents` - report metered usage to the App Events API.
     * `ExShopifyApp.Billing.Subscription` - read the merchant's active plan from the
       Admin API.
     * `pricing_url/2` - the merchant's hosted plan-selection page.
+
+  Metered usage is reported through `ExShopifyApp.AppEvents`, which lives in its own
+  namespace: the App Events API is billing-agnostic (meters can be billing *or*
+  tracking-only), so billing uses it but does not own it. See `docs/APP_EVENTS.md`.
 
   ## Library vs host responsibilities
 

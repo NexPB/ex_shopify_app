@@ -25,9 +25,9 @@ defmodule ExShopifyApp do
 
   Read individual settings off the result:
 
-    * `:token_cache` — the `ExShopifyApp.Billing.TokenCache` implementation
-      `ExShopifyApp.Billing.AppEvents` calls `fetch/0` on. Defaults to
-      `ExShopifyApp.Billing.TokenServer`.
+    * `:token_cache` — the `ExShopifyApp.AppEvents.TokenCache` implementation
+      `ExShopifyApp.AppEvents` calls `fetch/0` on. Defaults to
+      `ExShopifyApp.AppEvents.TokenServer`.
     * `:start_token_cache` — whether `ExShopifyApp.Application` auto-supervises the
       `:token_cache` module. Defaults to `true`; set `false` to supervise it yourself.
 
@@ -42,7 +42,7 @@ defmodule ExShopifyApp do
 
     Keyword.merge(
       [
-        token_cache: ExShopifyApp.Billing.TokenServer,
+        token_cache: ExShopifyApp.AppEvents.TokenServer,
         start_token_cache: true
       ],
       conf

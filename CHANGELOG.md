@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Shopify-native billing plumbing (see `docs/BILLING.md`):
-  - `ExShopifyApp.Billing.AppEvents`: report metered usage to the App Events API,
+  - `ExShopifyApp.AppEvents`: report metered usage to the App Events API,
     authenticating via the `client_credentials` grant with a cached JWT.
   - `ExShopifyApp.Billing.Subscription`: read the merchant's active plan from the
     Admin API.

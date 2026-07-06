@@ -1,4 +1,4 @@
-defmodule ExShopifyApp.Billing.AppEventsTest do
+defmodule ExShopifyApp.AppEventsTest do
   # async: false — the client_credentials JWT lives in the singleton TokenServer
   # process, and the token fetch runs in that process, so we use a global Mox stub
   # (via `set_mox_from_context`, which enables global mode for non-async tests) and
@@ -9,8 +9,8 @@ defmodule ExShopifyApp.Billing.AppEventsTest do
   import ExShopifyApp.TestHelpers, only: [json_response: 2]
   import ExShopifyApp.HTTPMockHelpers, only: [stub_http: 1]
 
-  alias ExShopifyApp.Billing.AppEvents
-  alias ExShopifyApp.Billing.TokenServer
+  alias ExShopifyApp.AppEvents
+  alias ExShopifyApp.AppEvents.TokenServer
 
   @token_url "https://api.shopify.com/auth/access_token"
   @events_url "https://api.shopify.com/app/unstable/events"

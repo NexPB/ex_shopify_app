@@ -9,7 +9,7 @@ defmodule ExShopifyApp.Billing.Subscription do
 
   The `current_period_end` is the end of the current billing cycle, useful for
   scoping a per-cycle idempotency key when reporting the billing meter (see
-  `ExShopifyApp.Billing.AppEvents`).
+  `ExShopifyApp.AppEvents`).
   """
 
   alias ExShopifyApp.Graphql

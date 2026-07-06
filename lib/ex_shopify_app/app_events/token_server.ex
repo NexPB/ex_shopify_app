@@ -1,24 +1,23 @@
-defmodule ExShopifyApp.Billing.TokenServer do
+defmodule ExShopifyApp.AppEvents.TokenServer do
   @moduledoc """
-  Caches a Shopify Billing access token in a supervised GenServer.
+  Caches a Shopify App Events access token in a supervised GenServer.
 
-  Generic to the Billing context: it serializes and caches whatever its `:fetcher`
-  returns, applying an early-refresh skew so the token is never used at the edge of
-  expiry. By default it caches the App Events `client_credentials` JWT via
-  `ExShopifyApp.Billing.AppEvents.fetch_token/0`.
+  It serializes and caches whatever its `:fetcher` returns, applying an early-refresh
+  skew so the token is never used at the edge of expiry. By default it caches the App
+  Events `client_credentials` JWT via `ExShopifyApp.AppEvents.fetch_token/0`.
 
   Started automatically under `ExShopifyApp.Application`, so host apps need no setup.
   Because every request goes through this single process, concurrent first-callers
   coalesce onto one token fetch rather than each hitting the token endpoint — the
   refresh is serialized for free, with no global VM state.
 
-  This is the default `ExShopifyApp.Billing.TokenCache` implementation. Host apps that
+  This is the default `ExShopifyApp.AppEvents.TokenCache` implementation. Host apps that
   prefer non-blocking reads can swap in their own (e.g. a Cachex/ETS TTL cache) via
   `config :ex_shopify_app, :app_events, token_cache: MyApp.TokenCache`.
   """
   use GenServer
 
-  @behaviour ExShopifyApp.Billing.TokenCache
+  @behaviour ExShopifyApp.AppEvents.TokenCache
 
   @typedoc """
   Fetches a fresh token, returning `{:ok, token, expires_in_seconds}` or
@@ -40,7 +39,7 @@ defmodule ExShopifyApp.Billing.TokenServer do
 
     * `:name` - the registered name, defaults to `#{inspect(__MODULE__)}`.
     * `:fetcher` - a 0-arity `t:fetcher/0`, defaults to
-      `&ExShopifyApp.Billing.AppEvents.fetch_token/0`.
+      `&ExShopifyApp.AppEvents.fetch_token/0`.
   """
   def start_link(opts) do
     {name, opts} = Keyword.pop(opts, :name, __MODULE__)
@@ -50,7 +49,7 @@ defmodule ExShopifyApp.Billing.TokenServer do
   @doc """
   Returns a valid cached token, fetching and caching a new one if needed.
   """
-  @impl ExShopifyApp.Billing.TokenCache
+  @impl ExShopifyApp.AppEvents.TokenCache
   @spec fetch(GenServer.server()) :: {:ok, String.t()} | {:error, any()}
   def fetch(server \\ __MODULE__) do
     GenServer.call(server, :fetch, @call_timeout)
@@ -66,7 +65,7 @@ defmodule ExShopifyApp.Billing.TokenServer do
 
   @impl true
   def init(opts) do
-    fetcher = Keyword.get(opts, :fetcher, &ExShopifyApp.Billing.AppEvents.fetch_token/0)
+    fetcher = Keyword.get(opts, :fetcher, &ExShopifyApp.AppEvents.fetch_token/0)
     {:ok, %{fetcher: fetcher, token: nil}}
   end
 
