@@ -54,10 +54,12 @@ defmodule ExShopifyApp.AppEvents do
   Fetches a fresh App Events access token via the `client_credentials` grant.
 
   This is the raw primitive: it performs the token request and returns
-  `{:ok, token, expires_in_seconds}` straight from Shopify, `{:error, %Tesla.Env{}}` on a
-  non-200 (or a 200 without a token), or `{:error, reason}` on a transport error. It does
-  no caching — for cached access use the configured `ExShopifyApp.AppEvents.TokenCache`
-  (default `ExShopifyApp.AppEvents.TokenServer`), which wraps this.
+  `{:ok, token, expires_in_seconds}`, where `expires_in_seconds` is derived from the
+  JWT's `exp` claim (the endpoint returns only the token, not an `expires_in` field).
+  Returns `{:error, %Tesla.Env{}}` on a non-200 (or a 200 without a decodable token), or
+  `{:error, reason}` on a transport error. It does no caching — for cached access use the
+  configured `ExShopifyApp.AppEvents.TokenCache` (default
+  `ExShopifyApp.AppEvents.TokenServer`), which wraps this.
   """
   @spec fetch_token() :: {:ok, String.t(), non_neg_integer()} | {:error, any()}
   def fetch_token do
@@ -70,13 +72,31 @@ defmodule ExShopifyApp.AppEvents do
     client()
     |> Tesla.post("/auth/access_token", body)
     |> HTTP.unwrap_response(fn
-      %Tesla.Env{body: %{"access_token" => token} = resp} ->
-        {:ok, token, Map.fetch!(resp, "expires_in")}
+      %Tesla.Env{body: %{"access_token" => token}} = env ->
+        case token_expires_in(token) do
+          {:ok, expires_in} -> {:ok, token, expires_in}
+          :error -> {:error, env}
+        end
 
       %Tesla.Env{} = env ->
         {:error, env}
     end)
   end
+
+  # The App Events token endpoint returns only the JWT (no `expires_in` field);
+  # the lifetime lives in the token's `exp` claim. Decode the payload segment and
+  # derive the remaining seconds, clamped at 0.
+  defp token_expires_in(jwt) when is_binary(jwt) do
+    with [_header, payload, _sig] <- String.split(jwt, "."),
+         {:ok, json} <- Base.url_decode64(payload, padding: false),
+         {:ok, %{"exp" => exp}} when is_integer(exp) <- JSON.decode(json) do
+      {:ok, max(exp - System.system_time(:second), 0)}
+    else
+      _ -> :error
+    end
+  end
+
+  defp token_expires_in(_), do: :error
 
   defp client(bearer_token \\ nil)
 

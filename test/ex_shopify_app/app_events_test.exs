@@ -17,6 +17,12 @@ defmodule ExShopifyApp.AppEventsTest do
   @events_url "https://api.shopify.com/app/unstable/events"
   @shop_gid "gid://shopify/Shop/123"
 
+  # The App Events token endpoint returns only a JWT; the lifetime lives in its `exp`
+  # claim. Build a well-formed one that expires far in the future so it stays cached.
+  @access_token "header." <>
+                  Base.url_encode64(JSON.encode!(%{"exp" => 32_503_680_000}), padding: false) <>
+                  ".sig"
+
   setup :set_mox_from_context
   setup :verify_on_exit!
 
@@ -33,10 +39,10 @@ defmodule ExShopifyApp.AppEventsTest do
           assert params["client_id"] == "test-api-key"
           assert params["client_secret"] == "test-api-secret"
           assert params["grant_type"] == "client_credentials"
-          {:ok, json_response(%{"access_token" => "jwt-abc", "expires_in" => 3600}, status: 200)}
+          {:ok, json_response(%{"access_token" => @access_token}, status: 200)}
 
         %{method: :post, url: @events_url, headers: headers, body: body} ->
-          assert {"authorization", "Bearer jwt-abc"} in headers
+          assert {"authorization", "Bearer #{@access_token}"} in headers
           params = JSON.decode!(body)
           assert params["shop_id"] == @shop_gid
           assert params["event_handle"] == "passes_active"
@@ -59,7 +65,7 @@ defmodule ExShopifyApp.AppEventsTest do
     test "returns {:error, _} on a non-202 event response" do
       stub_http(fn
         %{url: @token_url} ->
-          {:ok, json_response(%{"access_token" => "jwt-abc", "expires_in" => 3600}, status: 200)}
+          {:ok, json_response(%{"access_token" => @access_token}, status: 200)}
 
         %{url: @events_url} ->
           {:ok, json_response(%{"error" => "bad"}, status: 422)}
@@ -74,7 +80,7 @@ defmodule ExShopifyApp.AppEventsTest do
       stub_http(fn
         %{url: @token_url} ->
           :counters.add(counter, 1, 1)
-          {:ok, json_response(%{"access_token" => "jwt-abc", "expires_in" => 3600}, status: 200)}
+          {:ok, json_response(%{"access_token" => @access_token}, status: 200)}
 
         %{url: @events_url} ->
           {:ok, json_response(%{"accepted" => true}, status: 202)}
@@ -92,6 +98,18 @@ defmodule ExShopifyApp.AppEventsTest do
       end)
 
       assert {:error, %Tesla.Env{status: 401}} = report_event(1, "k")
+    end
+
+    test "treats a 200 with an undecodable token as an error, without calling events" do
+      stub_http(fn
+        %{url: @token_url} ->
+          {:ok, json_response(%{"access_token" => "not-a-jwt"}, status: 200)}
+
+        %{url: @events_url} ->
+          flunk("events endpoint must not be called when the token can't be decoded")
+      end)
+
+      assert {:error, %Tesla.Env{status: 200}} = report_event(1, "k")
     end
   end
 
