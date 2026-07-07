@@ -19,10 +19,12 @@ defmodule ExShopifyApp.RepoCase do
     quote do
       import Mox
       import ExShopifyApp.Factory
-      import ExShopifyApp.TestHelpers, only: [json_response: 2, stored: 1]
+      import ExShopifyApp.TestHelpers, only: [stored: 1]
+
+      import ExShopifyApp.HTTPMockHelpers,
+        only: [stub_http_json: 2, expect_http_json: 2, expect_http_call: 3]
 
       alias ExShopifyApp.AccessToken.Token
-      alias ExShopifyApp.MockTeslaAdapter
       alias ExShopifyApp.{TestRepo, TestStore}
     end
   end

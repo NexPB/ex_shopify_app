@@ -1,9 +1,8 @@
 ExUnit.start(capture_log: true)
 
-# Tesla HTTP calls are routed through this Mox-backed adapter in the test env (see
-# config/test.exs). The adapter implements the `Tesla.Adapter` behaviour, so tests set
-# expectations on its `call/2` callback both to stub responses and to assert call counts.
-Mox.defmock(ExShopifyApp.MockTeslaAdapter, for: Tesla.Adapter)
+# The Tesla adapter Mox mock (ExShopifyApp.HTTPMock) is defined in test/support/mocks.ex
+# and wired in as the Tesla adapter in config/test.exs. Tests drive it through the
+# ExShopifyApp.HTTPMockHelpers wrappers (stub_http_json/expect_http_json/expect_http_call).
 
 {:ok, _} = ExShopifyApp.TestRepo.start_link()
 

@@ -4,7 +4,7 @@ import Config
 config :logger, level: :warning
 
 # Route all Tesla calls through the Mox-backed mock adapter in the test env.
-config :tesla, adapter: ExShopifyApp.MockTeslaAdapter
+config :tesla, adapter: ExShopifyApp.HTTPMock
 
 # --- Ecto test repo --------------------------------------------------------
 #
