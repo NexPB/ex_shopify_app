@@ -3,11 +3,10 @@ defmodule ExShopifyApp.AccessTokenTest do
 
   import Mox
   import ExShopifyApp.Factory, only: [token_response: 1]
-  import ExShopifyApp.TestHelpers, only: [json_response: 2]
+  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_json: 2, expect_http_call: 3]
 
   alias ExShopifyApp.AccessToken
   alias ExShopifyApp.AccessToken.Token
-  alias ExShopifyApp.MockTeslaAdapter
 
   # Each test runs in its own process and drives the adapter directly (no spawning), so
   # Mox's default private mode is enough; verify_on_exit! asserts every expectation ran.
