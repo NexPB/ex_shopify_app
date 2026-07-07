@@ -341,24 +341,24 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   defp expect_refresh(n, opts \\ []) do
     delay = Keyword.get(opts, :delay, 0)
 
-    expect(MockTeslaAdapter, :call, n, fn %{method: :post}, _opts ->
-      if delay > 0, do: Process.sleep(delay)
-      {:ok, json_response(token_response(), status: 200)}
-    end)
+    expect_http_call(
+      fn %{method: :post} -> if delay > 0, do: Process.sleep(delay) end,
+      token_response(),
+      times: n,
+      status: 200
+    )
   end
 
   # Assert that no Shopify refresh call is made: a stub that fails the test if invoked.
   defp expect_no_refresh do
-    stub(MockTeslaAdapter, :call, fn _env, _opts ->
+    stub(ExShopifyApp.HTTPMock, :call, fn _env, _opts ->
       flunk("expected no Shopify refresh call, but the adapter was invoked")
     end)
   end
 
   # Stub the Shopify endpoint to return an error response (call count is not asserted).
   defp stub_error(body, status) do
-    stub(MockTeslaAdapter, :call, fn _env, _opts ->
-      {:ok, json_response(body, status: status)}
-    end)
+    stub_http_json(body, status: status)
   end
 
   defp hours_ago(h), do: DateTime.add(DateTime.utc_now(), -h, :hour)

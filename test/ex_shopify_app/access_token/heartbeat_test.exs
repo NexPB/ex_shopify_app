@@ -12,13 +12,10 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
     # Default: every refresh succeeds, returning a rotated token. Call counts aren't
     # asserted here (tests check resulting token state), so a stub fits; a test can
     # override it with its own stub.
-    stub(MockTeslaAdapter, :call, fn %{method: :post}, _opts ->
-      {:ok,
-       json_response(
-         token_response(%{"access_token" => "shpat_rotated", "refresh_token" => "shprt_rotated"}),
-         status: 200
-       )}
-    end)
+    stub_http_json(
+      token_response(%{"access_token" => "shpat_rotated", "refresh_token" => "shprt_rotated"}),
+      status: 200
+    )
 
     :ok
   end
@@ -47,9 +44,7 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
     test "a failing refresh logs and does not crash the process" do
       insert(:token, shopify_domain: "flaky.myshopify.com", issued: days_ago(87))
 
-      stub(MockTeslaAdapter, :call, fn _env, _opts ->
-        {:ok, json_response(%{"error" => "server"}, status: 503)}
-      end)
+      stub_http_json(%{"error" => "server"}, status: 503)
 
       run_tick()
 
