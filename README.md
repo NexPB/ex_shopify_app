@@ -1,5 +1,10 @@
 # `ex_shopify_app`
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_shopify_app.svg)](https://hex.pm/packages/ex_shopify_app)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_shopify_app)
+[![Hex.pm Downloads](https://img.shields.io/hexpm/dt/ex_shopify_app.svg)](https://hex.pm/packages/ex_shopify_app)
+[![License](https://img.shields.io/hexpm/l/ex_shopify_app.svg)](https://github.com/NexPB/ex_shopify_app/blob/master/LICENSE)
+
 Your entrypoint to create a Shopify Application in Elixir.
 
 ## Installation
@@ -118,15 +123,18 @@ nodes sharing the database.
 The unavoidable residual risk is a VM/host crash after Shopify responds but before the
 commit — Shopify and your database cannot share a transaction. Failures of the write
 *after* a successful Shopify refresh surface as the distinct, critical
-`{:error, {:token_persistence_failed_after_refresh, reason}}` and emit telemetry plus an
-`error` log (token values redacted).
+`{:error, {:token_persistence_failed_after_refresh, %ExShopifyApp.AccessToken.PersistenceFailure{}}}`
+and emit telemetry plus an `error` log (token values redacted). The struct carries the
+exchanged-but-unpersisted `token` (and the underlying `reason`) so a caller can retry
+the write — e.g. via `put_token/2` — instead of losing the token; re-running the
+exchange would fail because Shopify has already invalidated the prior token.
 
 ### Error taxonomy
 
 - `{:error, :no_token}`
 - `{:error, :reauthorization_required}`
 - `{:error, {:refresh_failed, reason}}` (retryable)
-- `{:error, {:token_persistence_failed_after_refresh, reason}}` (critical)
+- `{:error, {:token_persistence_failed_after_refresh, %PersistenceFailure{reason: reason, token: token}}}` (critical; retry persisting `token`)
 - `{:error, {:lock_timeout, reason}}`
 - `{:error, {:refresh_crashed, reason}}`
 

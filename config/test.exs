@@ -3,8 +3,7 @@ import Config
 # Keep test output readable: skip Ecto's per-query debug logging.
 config :logger, level: :warning
 
-# Route all Tesla calls through the Mox-backed adapter in the test env. The mock is
-# defined in test/test_helper.exs; tests set expectations on its `call/2` callback.
+# Route all Tesla calls through the Mox-backed mock adapter in the test env.
 config :tesla, adapter: ExShopifyApp.MockTeslaAdapter
 
 # --- Ecto test repo --------------------------------------------------------
