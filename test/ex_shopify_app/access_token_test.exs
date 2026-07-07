@@ -22,18 +22,21 @@ defmodule ExShopifyApp.AccessTokenTest do
 
   describe "fetch/3" do
     test "requests an expiring offline token by default and parses the response" do
-      expect(MockTeslaAdapter, :call, fn %{method: :post, url: url, body: body}, _opts ->
-        assert url == "https://shop.myshopify.com/admin/oauth/access_token"
-        params = JSON.decode!(body)
-        assert params["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange"
+      expect_http_call(
+        fn %{method: :post, url: url, body: body} ->
+          assert url == "https://shop.myshopify.com/admin/oauth/access_token"
+          params = JSON.decode!(body)
+          assert params["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange"
 
-        assert params["requested_token_type"] ==
-                 "urn:shopify:params:oauth:token-type:offline-access-token"
+          assert params["requested_token_type"] ==
+                   "urn:shopify:params:oauth:token-type:offline-access-token"
 
-        assert params["subject_token"] == "session-token"
-        assert params["expiring"] == "1"
-        {:ok, json_response(@expiring_body, status: 200)}
-      end)
+          assert params["subject_token"] == "session-token"
+          assert params["expiring"] == "1"
+        end,
+        @expiring_body,
+        status: 200
+      )
 
       assert {:ok, %Token{} = token} = AccessToken.fetch(@shop, "session-token")
       assert token.access_token == "shpat_123"
@@ -43,34 +46,35 @@ defmodule ExShopifyApp.AccessTokenTest do
     end
 
     test "omits the expiring param when expiring: false" do
-      expect(MockTeslaAdapter, :call, fn %{method: :post, body: body}, _opts ->
-        refute Map.has_key?(JSON.decode!(body), "expiring")
-
-        {:ok,
-         json_response(%{"access_token" => "shpat_x", "scope" => "read_orders"}, status: 200)}
-      end)
+      expect_http_call(
+        fn %{method: :post, body: body} ->
+          refute Map.has_key?(JSON.decode!(body), "expiring")
+        end,
+        %{"access_token" => "shpat_x", "scope" => "read_orders"},
+        status: 200
+      )
 
       assert {:ok, %Token{expires_at: nil}} =
                AccessToken.fetch(@shop, "session-token", expiring: false)
     end
 
     test "requests an online token when type: :online" do
-      expect(MockTeslaAdapter, :call, fn %{method: :post, body: body}, _opts ->
-        params = JSON.decode!(body)
+      expect_http_call(
+        fn %{method: :post, body: body} ->
+          params = JSON.decode!(body)
 
-        assert params["requested_token_type"] ==
-                 "urn:shopify:params:oauth:token-type:online-access-token"
-
-        {:ok, json_response(@expiring_body, status: 200)}
-      end)
+          assert params["requested_token_type"] ==
+                   "urn:shopify:params:oauth:token-type:online-access-token"
+        end,
+        @expiring_body,
+        status: 200
+      )
 
       assert {:ok, %Token{}} = AccessToken.fetch(@shop, "session-token", type: :online)
     end
 
     test "non-200 returns {:error, env}" do
-      expect(MockTeslaAdapter, :call, fn _env, _opts ->
-        {:ok, json_response(%{"error" => "invalid_subject_token"}, status: 400)}
-      end)
+      expect_http_json(%{"error" => "invalid_subject_token"}, status: 400)
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.fetch(@shop, "session-token")
     end

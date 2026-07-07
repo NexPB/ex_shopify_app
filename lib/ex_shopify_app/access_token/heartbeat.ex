@@ -9,12 +9,14 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
   `c:ExShopifyApp.AccessToken.Store.expiring_domains/2`) and rotates them through
   its lock-serialized `refresh_token/2`.
 
-  Registered under `{:global, __MODULE__}` so a single instance runs across the
-  whole cluster — starting it on every node still leaves one live process and the
-  rest get `{:error, {:already_started, pid}}`. Even so the work is idempotent:
-  each refresh re-checks under the per-shop row lock, so any concurrent tick
-  collapses into a single Shopify call per chain. Lifetime (non-expiring) rows
-  carry no `refresh_token_expires_at` and are never selected.
+  Registered locally under `__MODULE__` by default, so one instance runs per
+  node. Pass `{:global, __MODULE__}` (or any other name) via `:name` to run a
+  single instance across the whole cluster instead — starting it on every node
+  then leaves one live process and the rest get
+  `{:error, {:already_started, pid}}`. Either way the work is idempotent: each
+  refresh re-checks under the per-shop row lock, so any concurrent tick collapses
+  into a single Shopify call per chain. Lifetime (non-expiring) rows carry no
+  `refresh_token_expires_at` and are never selected.
 
   Add to your supervision tree:
 
@@ -31,8 +33,9 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
       (default 500). When a tick fills its batch the remaining chains are drained
       on an immediate follow-up tick rather than idling until the next `:interval`.
     * `:max_concurrency` — chains rotated in parallel within a batch (default 10)
-    * `:name` — process registration (default `{:global, __MODULE__}`); pass `nil`
-      to start an unregistered instance (used in tests)
+    * `:name` — process registration (default `__MODULE__`); pass
+      `{:global, __MODULE__}` for a single cluster-wide instance, or `nil` to
+      start an unregistered instance (used in tests)
   """
 
   use GenServer
@@ -55,7 +58,7 @@ defmodule ExShopifyApp.AccessToken.Heartbeat do
 
   @spec start_link([option()]) :: GenServer.on_start()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, {:global, __MODULE__}))
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(opts, :name, __MODULE__))
   end
 
   @impl GenServer
