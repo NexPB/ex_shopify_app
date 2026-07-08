@@ -16,9 +16,7 @@ defmodule ExShopifyApp.AccessToken.Store do
   """
 
   alias ExShopifyApp.AccessToken.Token
-
-  @typedoc "A shop reference carrying at least its `:shopify_domain`."
-  @type shop :: %{shopify_domain: String.t()}
+  alias ExShopifyApp.Shop
 
   @doc "Fetch the stored token for a shop domain, or `{:error, :no_token}`."
   @callback fetch_token(shopify_domain :: String.t()) ::
@@ -36,7 +34,7 @@ defmodule ExShopifyApp.AccessToken.Store do
   returned with no lock or network call). See `ExShopifyApp.AccessToken.Repo` for the
   reference implementation, decision table, and options.
   """
-  @callback valid_token(shop :: shop(), opts :: keyword()) ::
+  @callback valid_token(shop :: Shop.t(), opts :: keyword()) ::
               {:ok, Token.t()} | {:error, term()}
 
   @doc """
@@ -49,7 +47,7 @@ defmodule ExShopifyApp.AccessToken.Store do
   durably persisted before it is returned. See `ExShopifyApp.AccessToken.Repo` for the
   reference implementation and error taxonomy.
   """
-  @callback refresh_token(shop :: shop(), opts :: keyword()) ::
+  @callback refresh_token(shop :: Shop.t(), opts :: keyword()) ::
               {:ok, Token.t()} | {:error, term()}
 
   @doc """
@@ -64,7 +62,7 @@ defmodule ExShopifyApp.AccessToken.Store do
   Optional: stores that do not support lifetime-token migration need not implement it.
   See `ExShopifyApp.AccessToken.Repo` for the reference implementation.
   """
-  @callback migrate_token(shop :: shop(), opts :: keyword()) ::
+  @callback migrate_token(shop :: Shop.t(), opts :: keyword()) ::
               {:ok, Token.t()} | {:error, term()}
 
   @optional_callbacks migrate_token: 2
