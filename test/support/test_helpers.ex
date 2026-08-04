@@ -20,4 +20,10 @@ defmodule ExShopifyApp.TestHelpers do
       headers: [{"content-type", "application/json"}]
     }
   end
+
+  @doc "Fetch the persisted token for a shop, asserting one exists."
+  def stored(domain) do
+    {:ok, token} = ExShopifyApp.TestStore.fetch_token(domain)
+    token
+  end
 end

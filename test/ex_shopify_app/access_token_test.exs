@@ -2,22 +2,23 @@ defmodule ExShopifyApp.AccessTokenTest do
   use ExUnit.Case, async: true
 
   import Mox
+  import ExShopifyApp.Factory, only: [token_response: 1]
   import ExShopifyApp.HTTPMockHelpers, only: [expect_http_json: 2, expect_http_call: 3]
 
   alias ExShopifyApp.AccessToken
   alias ExShopifyApp.AccessToken.Token
 
+  # Each test runs in its own process and drives the adapter directly (no spawning), so
+  # Mox's default private mode is enough; verify_on_exit! asserts every expectation ran.
   setup :verify_on_exit!
 
   @shop %{shopify_domain: "shop.myshopify.com"}
 
-  @expiring_body %{
-    "access_token" => "shpat_123",
-    "scope" => "write_orders",
-    "expires_in" => 3600,
-    "refresh_token" => "shprt_456",
-    "refresh_token_expires_in" => 7_776_000
-  }
+  @expiring_body token_response(%{
+                   "access_token" => "shpat_123",
+                   "scope" => "write_orders",
+                   "refresh_token" => "shprt_456"
+                 })
 
   describe "fetch/3" do
     test "requests an expiring offline token by default and parses the response" do

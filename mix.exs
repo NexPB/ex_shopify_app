@@ -39,7 +39,8 @@ defmodule ExShopifyApp.MixProject do
       # running the bundled migration already has an Ecto SQL repo.
       {:ecto_sql, "~> 3.0", optional: true},
       {:postgrex, ">= 0.0.0", only: :test},
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:ex_machina, "~> 2.7", only: :test}
     ]
   end
 
