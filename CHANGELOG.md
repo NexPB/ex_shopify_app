@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Added
+
+- `ExShopifyApp.AccessToken.Heartbeat`: a supervision-tree GenServer that
+  proactively rotates token chains nearing their 90-day refresh-token expiry,
+  so dormant shops with no API activity don't silently lose access.
+- `ExShopifyApp.AccessToken.Store.expiring_domains/2` (optional callback) and
+  `ExShopifyApp.AccessToken.Repo.expiring_domains/3`: list chains expiring
+  within a window, closest expiry first, to drive the heartbeat.
 
 ## [1.2.0]
 
