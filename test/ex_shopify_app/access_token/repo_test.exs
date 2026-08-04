@@ -4,6 +4,8 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   # sandbox in shared mode so spawned processes can use the test's connection/transaction.
   use ExShopifyApp.RepoCase, async: false
 
+  import ExShopifyApp.HTTPMockHelpers, only: [stub_http_json: 2, expect_http_call: 3]
+
   alias ExShopifyApp.AccessToken.PersistenceFailure
 
   # Asserts every `expect`ed call count was met (and not exceeded) at the end of a test.

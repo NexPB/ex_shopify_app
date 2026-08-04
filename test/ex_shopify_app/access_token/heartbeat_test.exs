@@ -4,6 +4,8 @@ defmodule ExShopifyApp.AccessToken.HeartbeatTest do
   # shared imports/aliases, global Mox mode, and the per-test table cleanup.
   use ExShopifyApp.RepoCase, async: false
 
+  import ExShopifyApp.HTTPMockHelpers, only: [stub_http_json: 2]
+
   alias ExShopifyApp.AccessToken.Heartbeat
 
   @week 7 * 24 * 60 * 60
