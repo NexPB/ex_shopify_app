@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(WIP)
+
+## [1.3.0]
+
 ### Added
 
 - `ExShopifyApp.AccessToken.Heartbeat`: a supervision-tree GenServer that
