@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Added
+
+- `{:error, {:refresh_unavailable, reason}}`: the detached refresh task exited
+  abnormally.
+
+### Changed
+
+- `refresh_token/2` and `migrate_token/2` now run their locked transaction in a
+  task supervised by `ExShopifyApp.AccessToken.TaskSupervisor` instead of on the
+  calling process. The task holds its own connection and is not linked to the
+  caller, so the transaction commits independently: a caller that refreshes inside
+  its own `Repo.transaction/2` and then rolls back no longer discards the token
+  Shopify has already rotated, and a caller killed mid-refresh no longer aborts the
+  pending commit. `valid_token/2` still decides, and serves fresh tokens, inline.
+  The supervisor is started by this library; host apps need no supervision-tree
+  change. `ExShopifyApp.AccessToken.Store` is unchanged.
+- Refreshing from inside a caller transaction now logs a warning: the caller pins a
+  pooled connection while waiting for a task that needs its own.
 
 ## [1.3.0]
 
@@ -73,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/NexPB/ex_shopify_app/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.1...1.0.0

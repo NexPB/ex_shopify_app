@@ -32,6 +32,12 @@ defmodule ExShopifyApp.AccessToken.Repo do
   unavoidable post-response crash window are covered in the README and this module
   documentation.
 
+  That transaction runs **detached from the caller**, in a task supervised by
+  `ExShopifyApp.AccessToken.TaskSupervisor`, so it holds its own connection and commits
+  independently of whatever the caller does or how the caller dies. See
+  `ExShopifyApp.AccessToken.Refresher` for why. Only the locked mutation moves off the
+  calling process: `valid_token/3` makes its decision, and serves a fresh token, inline.
+
   ## `valid_token/2` decision table
 
     * No row → `{:error, :no_token}`.
@@ -58,6 +64,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
   alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
   alias ExShopifyApp.AccessToken.RefreshResult
+  alias ExShopifyApp.AccessToken.Refresher
   alias ExShopifyApp.AccessToken.Repo.Options
   alias ExShopifyApp.AccessToken.Telemetry
   alias ExShopifyApp.Shop
@@ -198,6 +205,10 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @doc """
   Run the locked refresh decision for `shop` via `repo`.
 
+  Runs in a task supervised by `ExShopifyApp.AccessToken.TaskSupervisor`, detached from
+  the caller, so its transaction commits independently of the caller's — see
+  `ExShopifyApp.AccessToken.Refresher`. The caller waits for the result indefinitely.
+
   This does not unconditionally call Shopify. Inside a `Repo.transaction/2` it takes a
   `SELECT ... FOR UPDATE` lock on the shop's row, re-reads the token, and:
 
@@ -213,15 +224,19 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @spec refresh_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def refresh_token(repo, shop, opts \\ []) do
     domain = Shop.normalize_domain(shop.shopify_domain)
-    with_refresh_telemetry(domain, fn -> locked_refresh(repo, shop, domain, opts) end)
+
+    Refresher.run(repo, domain, fn ->
+      with_refresh_telemetry(domain, fn -> locked_refresh(repo, shop, domain, opts) end)
+    end)
   end
 
   @doc """
   Run the locked migration decision for `shop` via `repo`.
 
   Migrates a stored lifetime (non-expiring) offline token to an expiring one under the
-  same per-shop, cross-node lock as `refresh_token/3`. Inside a `Repo.transaction/2` it
-  takes a `SELECT ... FOR UPDATE` lock on the shop's row, re-reads the token, and:
+  same per-shop, cross-node lock as `refresh_token/3`, and detached from the caller in
+  the same way. Inside a `Repo.transaction/2` it takes a `SELECT ... FOR UPDATE` lock on
+  the shop's row, re-reads the token, and:
 
     * returns `{:error, :no_token}` when no row exists;
     * returns `{:ok, token}` with **no** Shopify call when the token already carries
@@ -237,7 +252,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @spec migrate_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def migrate_token(repo, shop, opts \\ []) do
     shop = %{shop | shopify_domain: Shop.normalize_domain(shop.shopify_domain)}
-    with_refresh_telemetry(shop.shopify_domain, fn -> locked_migrate(repo, shop, opts) end)
+    domain = shop.shopify_domain
+
+    Refresher.run(repo, domain, fn ->
+      with_refresh_telemetry(domain, fn -> locked_migrate(repo, shop, opts) end)
+    end)
   end
 
   # Wraps a locked, single-rotation token operation in the refresh telemetry span and

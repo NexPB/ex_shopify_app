@@ -18,6 +18,7 @@ defmodule ExShopifyApp.FailingUpdateRepo do
   defdelegate query!(sql), to: TestRepo
   defdelegate transaction(fun, opts), to: TestRepo
   defdelegate rollback(value), to: TestRepo
+  defdelegate in_transaction?(), to: TestRepo
 
   @doc "Always fail, simulating a durable write failure after a successful refresh."
   def update(_changeset), do: {:error, :persist_boom}
