@@ -54,6 +54,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
   import Ecto.Query, only: [from: 2]
 
+  require Logger
+
   alias ExShopifyApp.AccessToken
   alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.AccessToken.Token
@@ -61,6 +63,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
   alias ExShopifyApp.AccessToken.Repo.Options
   alias ExShopifyApp.AccessToken.Telemetry
   alias ExShopifyApp.Shop
+
+  @task_supervisor ExShopifyApp.AccessToken.TaskSupervisor
 
   @doc false
   defmacro __using__(opts) do
@@ -198,6 +202,11 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @doc """
   Run the locked refresh decision for `shop` via `repo`.
 
+  Runs in a supervised task rather than on the calling process, so the transaction gets
+  its own connection and commits independently of what the caller does or how it dies:
+  a token Shopify has already rotated cannot be rolled back or killed away. The caller
+  waits indefinitely.
+
   This does not unconditionally call Shopify. Inside a `Repo.transaction/2` it takes a
   `SELECT ... FOR UPDATE` lock on the shop's row, re-reads the token, and:
 
@@ -213,7 +222,10 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @spec refresh_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def refresh_token(repo, shop, opts \\ []) do
     domain = Shop.normalize_domain(shop.shopify_domain)
-    with_refresh_telemetry(domain, fn -> locked_refresh(repo, shop, domain, opts) end)
+
+    run_detached(repo, domain, fn ->
+      with_refresh_telemetry(domain, fn -> locked_refresh(repo, shop, domain, opts) end)
+    end)
   end
 
   @doc """
@@ -237,7 +249,37 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @spec migrate_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def migrate_token(repo, shop, opts \\ []) do
     shop = %{shop | shopify_domain: Shop.normalize_domain(shop.shopify_domain)}
-    with_refresh_telemetry(shop.shopify_domain, fn -> locked_migrate(repo, shop, opts) end)
+    domain = shop.shopify_domain
+
+    run_detached(repo, domain, fn ->
+      with_refresh_telemetry(domain, fn -> locked_migrate(repo, shop, opts) end)
+    end)
+  end
+
+  defp run_detached(repo, domain, fun) when is_function(fun, 0) do
+    warn_if_in_transaction(repo, domain)
+
+    @task_supervisor
+    |> Task.Supervisor.async_nolink(fun)
+    |> Task.yield(:infinity)
+    |> case do
+      {:ok, result} -> result
+      {:exit, reason} -> {:error, {:refresh_unavailable, reason}}
+    end
+  end
+
+  defp warn_if_in_transaction(repo, domain) do
+    if repo.in_transaction?() do
+      Logger.warning(
+        "ex_shopify_app: a locked token refresh for #{domain} was requested from inside " <>
+          "a caller transaction. The refresh itself runs in a separate supervised " <>
+          "process on its own connection, so the caller's transaction can no longer roll " <>
+          "it back — but the caller holds a pooled connection while it waits, which can " <>
+          "exhaust the pool under concurrency. Move the refresh outside the transaction."
+      )
+    end
+
+    :ok
   end
 
   # Wraps a locked, single-rotation token operation in the refresh telemetry span and
