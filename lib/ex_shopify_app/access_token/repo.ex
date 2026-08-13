@@ -256,10 +256,6 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end)
   end
 
-  # Runs a locked mutation in a supervised task so it gets its own connection: a
-  # top-level transaction that commits whatever the caller does, unlinked so the
-  # caller's death cannot abort it. Never `Task.shutdown/2`-ed — abandoning the wait
-  # leaves it running, because its commit is the thing worth protecting.
   defp run_detached(repo, domain, fun) when is_function(fun, 0) do
     warn_if_in_transaction(repo, domain)
 
