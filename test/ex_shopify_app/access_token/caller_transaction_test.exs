@@ -1,23 +1,13 @@
 defmodule ExShopifyApp.AccessToken.CallerTransactionTest do
   @moduledoc """
-  The property the detached refresh exists for: a caller transaction that rolls back
-  after a refresh cannot undo the persisted token.
+  The property that motivates running the mutation off the calling process: a caller
+  transaction that rolls back after a refresh cannot undo the persisted token.
 
-  Shopify invalidates the previous refresh token the moment it answers, so a token that
-  is exchanged and then rolled away is lost for good — the merchant has to reauthorize.
-  Running the refresh in the caller's process made that reachable, because Ecto's
-  per-process connection turns the refresh transaction into a nested one that never
-  commits on its own.
-
-  Deliberately does NOT use `ExShopifyApp.RepoCase`: under the sandbox's manual and
-  shared modes every process ends up on a single connection — shared mode funnels them
-  there outright, and in manual mode the `$callers` entry `Task` sets propagates the
-  owner's connection to spawned tasks — so the refresh would still nest and this property
-  would be untestable. This case puts the sandbox in `:auto` mode instead, where each
-  process checks out its own connection and nothing is wrapped in a sandbox transaction.
-
-  Auto-mode connections commit for real, so the test cleans up its row. `async: false`:
-  the sandbox mode is repo-global and the test commits to a shared table.
+  Deliberately not `ExShopifyApp.RepoCase`. Both sandbox modes funnel every process onto
+  one connection — shared mode outright, manual mode via the `$callers` entry `Task` sets
+  — so the refresh would still nest and the property would be untestable. `:auto` mode
+  gives each process its own connection instead, which means real commits: hence the row
+  cleanup and `async: false`.
   """
   use ExUnit.Case, async: false
 

@@ -9,22 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `{:error, {:refresh_unavailable, reason}}`: the detached refresh task exited
-  abnormally.
+- `{:error, {:refresh_unavailable, reason}}`: the refresh task exited abnormally.
 
 ### Changed
 
 - `refresh_token/2` and `migrate_token/2` now run their locked transaction in a
-  task supervised by `ExShopifyApp.AccessToken.TaskSupervisor` instead of on the
-  calling process. The task holds its own connection and is not linked to the
-  caller, so the transaction commits independently: a caller that refreshes inside
-  its own `Repo.transaction/2` and then rolls back no longer discards the token
-  Shopify has already rotated, and a caller killed mid-refresh no longer aborts the
-  pending commit. `valid_token/2` still decides, and serves fresh tokens, inline.
-  The supervisor is started by this library; host apps need no supervision-tree
-  change. `ExShopifyApp.AccessToken.Store` is unchanged.
-- Refreshing from inside a caller transaction now logs a warning: the caller pins a
-  pooled connection while waiting for a task that needs its own.
+  supervised task rather than on the calling process, so it commits independently:
+  a caller that rolls back, or dies, mid-refresh can no longer discard a token
+  Shopify has already rotated. Refreshing from inside a caller transaction now logs
+  a warning. Host apps need no supervision-tree change, and
+  `ExShopifyApp.AccessToken.Store` is unchanged.
 
 ## [1.3.0]
 

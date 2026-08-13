@@ -1,34 +1,17 @@
 defmodule ExShopifyApp.AccessToken.Refresher do
   @moduledoc """
-  Runs a locked token mutation in a supervised process, detached from its caller.
+  Runs a locked token mutation in a supervised task, off the calling process.
 
-  Refreshing rotates both tokens: Shopify invalidates the previous refresh token the
-  moment it answers, so the transaction that persists the new one *must* commit. A token
-  that is exchanged and then rolled away is lost for good and the merchant has to
-  reauthorize. Running that transaction in the caller's process leaves two ways to reach
-  exactly that outcome:
+  Shopify invalidates the previous refresh token the moment it answers, so the
+  transaction that persists the new one *must* commit. On the caller's process it might
+  not: Ecto checks connections out per process, so a caller already inside its own
+  `Repo.transaction/2` nests the refresh and can roll the new token away, and a caller
+  killed mid-refresh takes the open transaction down with it.
 
-    * the caller is already inside its own `Repo.transaction/2`. Ecto checks connections
-      out per process, so the refresh becomes a *nested* transaction — it never commits on
-      its own, and the caller rolling back afterwards discards the freshly persisted
-      token. `SET LOCAL lock_timeout` and the `FOR UPDATE` row lock leak into the caller's
-      transaction for the same reason.
-    * the caller is killed mid-refresh — a job runner's timeout, `Task.async_stream`'s
-      `:timeout`, a supervisor shutdown — taking its connection and the open transaction
-      down with it, inside the window between Shopify's response and the commit.
-
-  Running the mutation under `ExShopifyApp.AccessToken.TaskSupervisor` closes both. The
-  task holds its own connection, so its transaction is top-level and commits on its own,
-  and `Task.Supervisor.async_nolink/2` leaves it unlinked, so the caller's death cannot
-  abort it.
-
-  The task is deliberately never `Task.shutdown/2`-ed: abandoning the wait leaves it
-  running to completion, because its commit is the thing worth protecting.
-
-  ## Waiting
-
-  Callers wait for the result indefinitely, which matches how long the work took when it
-  ran inline; the transaction's own `:timeout` remains the bound on it.
+  `Task.Supervisor.async_nolink/2` gives the mutation its own connection — a top-level
+  transaction — and no link back to the caller. The task is never `Task.shutdown/2`-ed:
+  abandoning the wait leaves it running, because its commit is the thing worth
+  protecting. Callers wait indefinitely, bounded by the transaction's own `:timeout`.
   """
 
   require Logger
@@ -39,10 +22,8 @@ defmodule ExShopifyApp.AccessToken.Refresher do
   Run `fun` under `ExShopifyApp.AccessToken.TaskSupervisor` and wait for its result.
 
   Returns whatever `fun` returns, or `{:error, {:refresh_unavailable, reason}}` if the
-  task exits abnormally.
-
-  Logs a warning when `repo` is already in a transaction on the calling process; see the
-  module documentation.
+  task exits abnormally. Logs a warning when `repo` is already in a transaction on the
+  calling process.
   """
   @spec run(module(), String.t(), (-> result)) ::
           result | {:error, {:refresh_unavailable, term()}}

@@ -32,12 +32,6 @@ defmodule ExShopifyApp.AccessToken.Repo do
   unavoidable post-response crash window are covered in the README and this module
   documentation.
 
-  That transaction runs **detached from the caller**, in a task supervised by
-  `ExShopifyApp.AccessToken.TaskSupervisor`, so it holds its own connection and commits
-  independently of whatever the caller does or how the caller dies. See
-  `ExShopifyApp.AccessToken.Refresher` for why. Only the locked mutation moves off the
-  calling process: `valid_token/3` makes its decision, and serves a fresh token, inline.
-
   ## `valid_token/2` decision table
 
     * No row → `{:error, :no_token}`.
@@ -205,9 +199,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
   @doc """
   Run the locked refresh decision for `shop` via `repo`.
 
-  Runs in a task supervised by `ExShopifyApp.AccessToken.TaskSupervisor`, detached from
-  the caller, so its transaction commits independently of the caller's — see
-  `ExShopifyApp.AccessToken.Refresher`. The caller waits for the result indefinitely.
+  Runs in a supervised task rather than on the calling process, so the transaction
+  commits independently of what the caller does or how it dies — see
+  `ExShopifyApp.AccessToken.Refresher`. The caller waits indefinitely.
 
   This does not unconditionally call Shopify. Inside a `Repo.transaction/2` it takes a
   `SELECT ... FOR UPDATE` lock on the shop's row, re-reads the token, and:
@@ -234,9 +228,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
   Run the locked migration decision for `shop` via `repo`.
 
   Migrates a stored lifetime (non-expiring) offline token to an expiring one under the
-  same per-shop, cross-node lock as `refresh_token/3`, and detached from the caller in
-  the same way. Inside a `Repo.transaction/2` it takes a `SELECT ... FOR UPDATE` lock on
-  the shop's row, re-reads the token, and:
+  same per-shop, cross-node lock as `refresh_token/3`. Inside a `Repo.transaction/2` it
+  takes a `SELECT ... FOR UPDATE` lock on the shop's row, re-reads the token, and:
 
     * returns `{:error, :no_token}` when no row exists;
     * returns `{:ok, token}` with **no** Shopify call when the token already carries

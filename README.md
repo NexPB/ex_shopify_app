@@ -120,21 +120,10 @@ lock, calls Shopify only if a refresh is still required, and synchronously persi
 new token before committing. The lock serializes refreshes across all processes and
 nodes sharing the database.
 
-That transaction runs **detached from the caller**, in a task supervised by
-`ExShopifyApp.AccessToken.TaskSupervisor` (started by this library — you don't add it to
-your supervision tree). It holds its own connection, so it is a top-level transaction
-that commits on its own, and it is not linked to the caller, so the caller cannot take it
-down. Two failure modes disappear as a result: a caller that refreshes inside its own
-`Repo.transaction/2` and then rolls back no longer discards the token Shopify has already
-rotated, and a caller killed mid-refresh (a job runner's timeout, `Task.async_stream`'s
-`:timeout`, a supervisor shutdown) no longer aborts the pending commit. Only the locked
-mutation is detached — `valid_token/2` decides, and serves a fresh token, inline.
-
-Callers wait for the result indefinitely; the transaction's own `:timeout` is the bound.
-
-Refreshing inside a caller transaction is still worth avoiding, and logs a warning: the
-caller holds a pooled connection while it waits for a task that needs its own, which can
-exhaust the pool under concurrency.
+That transaction runs in a library-supervised task on its own connection, so neither a
+caller that rolls back nor one that dies mid-refresh can discard a token Shopify has
+already rotated. Still avoid refreshing inside your own `Repo.transaction/2` — it pins a
+pooled connection for the wait, and logs a warning saying so.
 
 The unavoidable residual risk is a VM/host crash after Shopify responds but before the
 commit: Shopify and your database cannot share a transaction. Failures of the write
@@ -153,7 +142,7 @@ exchange would fail because Shopify has already invalidated the prior token.
 - `{:error, {:token_persistence_failed_after_refresh, %PersistenceFailure{reason: reason, token: token}}}` (critical; retry persisting `token`)
 - `{:error, {:lock_timeout, reason}}`
 - `{:error, {:refresh_crashed, reason}}`
-- `{:error, {:refresh_unavailable, reason}}` (the detached refresh task exited abnormally)
+- `{:error, {:refresh_unavailable, reason}}` (the refresh task exited abnormally)
 
 ### Telemetry
 
