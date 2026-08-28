@@ -6,12 +6,15 @@ defmodule ExShopifyApp.Application do
   def start(_type, _args) do
     app_events = ExShopifyApp.app_events_config()
 
-    children =
+    app_events_children =
       if app_events[:start_token_cache] do
         [app_events[:token_cache]]
       else
         []
       end
+
+    children =
+      [{Task.Supervisor, name: ExShopifyApp.AccessToken.TaskSupervisor} | app_events_children]
 
     Supervisor.start_link(
       children,

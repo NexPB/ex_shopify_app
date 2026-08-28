@@ -88,5 +88,6 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
   defp classify({:error, {:token_persistence_failed_after_refresh, _}}), do: :persistence_failed
   defp classify({:error, {:lock_timeout, _}}), do: :lock_timeout
   defp classify({:error, {:refresh_crashed, _}}), do: :refresh_crashed
+  defp classify({:error, {:refresh_unavailable, _}}), do: :refresh_unavailable
   defp classify({:error, _}), do: :error
 end

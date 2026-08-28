@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Added
+
+- `{:error, {:refresh_unavailable, reason}}`: the refresh task exited abnormally.
+
+### Changed
+
+- `refresh_token/2` and `migrate_token/2` now run their locked transaction in a
+  supervised task rather than on the calling process, so it commits independently:
+  a caller that rolls back, or dies, mid-refresh can no longer discard a token
+  Shopify has already rotated. Refreshing from inside a caller transaction now logs
+  a warning. Host apps need no supervision-tree change, and
+  `ExShopifyApp.AccessToken.Store` is unchanged.
 
 ## [1.3.0]
 
@@ -73,7 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/NexPB/ex_shopify_app/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/NexPB/ex_shopify_app/compare/v0.1.1...1.0.0
