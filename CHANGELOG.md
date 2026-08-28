@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(WIP)
+
+## [1.4.0]
+
 ### Added
 
 - `{:error, {:refresh_unavailable, reason}}`: the refresh task exited abnormally.
