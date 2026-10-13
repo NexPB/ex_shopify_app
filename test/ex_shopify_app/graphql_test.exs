@@ -2,7 +2,7 @@ defmodule ExShopifyApp.GraphqlTest do
   use ExUnit.Case, async: true
 
   import Mox
-  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_call: 3]
+  import ExShopifyApp.HTTPMockHelpers, only: [expect_http_call: 3, stub_http: 1]
 
   alias ExShopifyApp.Graphql
 
@@ -90,6 +90,19 @@ defmodule ExShopifyApp.GraphqlTest do
 
       assert {:error, %Tesla.Env{status: 401}} =
                Graphql.unwrap(result, fn _data -> {:ok, :unreached} end)
+    end
+
+    test "leaves the access token out of the error env" do
+      # Real adapters return the request env, which still holds `__client__`.
+      stub_http(fn env -> {:ok, %{env | status: 429, headers: [], body: "{}"}} end)
+
+      assert {:error, %Tesla.Env{status: 429} = env} =
+               @shop
+               |> Graphql.client()
+               |> Graphql.query("query { __typename }")
+               |> Graphql.unwrap(fn _data -> {:ok, :unreached} end)
+
+      refute inspect(env, limit: :infinity) =~ "shpat_123"
     end
   end
 end
