@@ -1,0 +1,22 @@
+CHANGELOG.md
+  s_8a39aa67622ca1::t_46b7c4763d1c2c 12-19
+  s_8a39aa67622ca1::t_18f242b452f0ba 99-101
+mix.exs
+  s_8a39aa67622ca1::t_61e72c5eadb122 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38261b10c568a7e38393ba06ecbf4a79f54d8524",
+  "prompts": {},
+  "sessions": {
+    "s_8a39aa67622ca1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cc79d951-d558-48c6-ad70-be7090538cb5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
