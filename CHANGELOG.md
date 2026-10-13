@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (WIP)
 
+## [1.4.1]
+
+### Fixed
+
+- A non-success response no longer carries the Tesla client in its
+  `{:error, %Tesla.Env{}}` result, so inspecting the error no longer prints the
+  `x-shopify-access-token` header.
+
 ## [1.4.0]
 
 ### Added
@@ -88,7 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.4.1...HEAD
+[1.4.1]: https://github.com/NexPB/ex_shopify_app/compare/1.4.0...1.4.1
+[1.4.0]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/NexPB/ex_shopify_app/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/NexPB/ex_shopify_app/compare/1.0.0...1.1.0
