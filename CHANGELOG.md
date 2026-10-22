@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Fixed
+
+- `ExShopifyApp.Shop.t/0`, `authorized/0` and `identified/0` now accept maps and
+  structs with other keys. Before, Dialyzer reported that a call such as
+  `valid_token/2` with a host shop struct can never return, and flagged every
+  caller as unreachable.
 
 ## [1.4.1]
 

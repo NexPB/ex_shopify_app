@@ -15,14 +15,21 @@ defmodule ExShopifyApp.Shop do
       `ExShopifyApp.Graphql.ensure_gid/2` for building one from a numeric ID.
   """
 
+  # `%{key: type}` alone allows no other keys, so Dialyzer would reject host structs
+  # such as a shop schema; `optional(atom())` keeps each map open.
+
   @typedoc "A shop reference carrying at least its `:shopify_domain`."
-  @type t :: %{shopify_domain: String.t()}
+  @type t :: %{required(:shopify_domain) => String.t(), optional(atom()) => any()}
 
   @typedoc "A shop reference carrying its `:shopify_domain` and offline `:access_token`."
-  @type authorized :: %{shopify_domain: String.t(), access_token: String.t()}
+  @type authorized :: %{
+          required(:shopify_domain) => String.t(),
+          required(:access_token) => String.t(),
+          optional(atom()) => any()
+        }
 
   @typedoc "A shop reference carrying its `:shop_gid`, e.g. `\"gid://shopify/Shop/123\"`."
-  @type identified :: %{shop_gid: String.t()}
+  @type identified :: %{required(:shop_gid) => String.t(), optional(atom()) => any()}
 
   @doc """
   Normalizes a shop domain the same way `ExShopifyApp.AccessToken.client/1` does:
