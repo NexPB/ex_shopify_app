@@ -1,0 +1,26 @@
+CHANGELOG.md
+  s_6ef0ad14720099::t_885a185e20937a 10-15
+lib/ex_shopify_app/shop.ex
+  s_6ef0ad14720099::t_49be06c12f4c56 18-20,22,25-29,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "651cbab40ef34a8a1461199e5c16c08a2ccae6c6",
+  "prompts": {},
+  "humans": {
+    "h_963ee31fe77864": {
+      "author": "NexPB <lorenzo@nexp.be>"
+    }
+  },
+  "sessions": {
+    "s_6ef0ad14720099": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d71bc3-16e3-4934-a1b6-08cbdf779572",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <lorenzo@nexp.be>"
+    }
+  }
+}
