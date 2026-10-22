@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(WIP)
+
+## [1.4.2]
+
 ### Fixed
 
 - `ExShopifyApp.Shop.t/0`, `authorized/0` and `identified/0` now accept maps and
@@ -101,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.4.1...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.4.2...HEAD
+[1.4.2]: https://github.com/NexPB/ex_shopify_app/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/NexPB/ex_shopify_app/compare/1.4.0...1.4.1
 [1.4.0]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/NexPB/ex_shopify_app/compare/1.2.0...1.3.0
