@@ -1,0 +1,24 @@
+mise.toml
+  s_af593e91a33959::t_b839f1a1aa2850 1-3
+.github/workflows/publish.yml
+  s_af593e91a33959::t_7e5ed172065c89 25,27-28
+.github/workflows/test.yml
+  s_af593e91a33959::t_d90a15c236c0e8 40-41,43-44,52,54
+  s_af593e91a33959::t_d341bdd53d040c 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "504ec072534c8f51294e8df5f69fc305ed89c028",
+  "prompts": {},
+  "sessions": {
+    "s_af593e91a33959": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3da4c103-420f-444d-b408-afbfa6bb57d0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
