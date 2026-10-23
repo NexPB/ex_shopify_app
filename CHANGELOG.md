@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The minimum versions are now `tesla` 1.18.3, `mint` 1.9.0, `plug` 1.19.3 and
   `guardian` 2.5.0. Older versions have published security advisories.
+- `ExShopifyApp.Plugs.AllowIframe` now sets only the `frame-ancestors` directive
+  and keeps the other directives of an existing `content-security-policy` header.
+  Before, it replaced the header and dropped the host's policy, such as `script-src`.
 
 ## [1.4.2]
 

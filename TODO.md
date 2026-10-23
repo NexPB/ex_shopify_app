@@ -2,12 +2,6 @@
 
 Security findings from the review that #14 did not fix. The most severe come first.
 
-## Keep the host's CSP in `AllowIframe`
-
-`lib/ex_shopify_app/plugs/allow_iframe.ex:26` replaces the whole `content-security-policy` header, so it drops a policy (such as `script-src`) that the host set earlier in the pipeline.
-
-- [ ] Replace only the `frame-ancestors` directive, or add it to the existing header.
-
 ## Check all session token claims
 
 `lib/ex_shopify_app/token.ex` checks the signature, plus `exp` and `nbf` when the token has them. [Shopify's docs](https://shopify.dev/docs/apps/build/authentication-authorization/id-tokens) also require these checks:
