@@ -12,7 +12,8 @@ defmodule ExShopifyApp.Web.CacheBodyReader do
   Read and "cache" the body.
   Store the body in the `assigns` under the `:raw_body` key.
 
-  Returns `{:more, partial, conn}` without caching it when the body exceeds
+  For a webhook, `:length` defaults to 10 MB; a `:length` given to `Plug.Parsers`
+  overrides it. Returns `{:more, partial, conn}` without caching it when the body exceeds
   `:length`; `Plug.Parsers` then raises `Plug.Parsers.RequestTooLargeError` (413).
   """
   def read_body(%Conn{} = conn, opts) do
@@ -25,7 +26,7 @@ defmodule ExShopifyApp.Web.CacheBodyReader do
         {:ok, body, conn}
       end
     else
-      Plug.Conn.read_body(conn, [])
+      Plug.Conn.read_body(conn, opts)
     end
   end
 

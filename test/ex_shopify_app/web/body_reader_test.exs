@@ -37,4 +37,12 @@ defmodule ExShopifyApp.Web.CacheBodyReaderTest do
 
     assert Plug.Exception.status(error) == 413
   end
+
+  test "applies the Plug.Parsers :length to a non-webhook body" do
+    conn =
+      conn(:post, "/", ~s({"id":1234567890}))
+      |> put_req_header("content-type", "application/json")
+
+    assert_raise Plug.Parsers.RequestTooLargeError, fn -> parse(conn, length: 4) end
+  end
 end
