@@ -38,7 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `:length`. Before, it raised a `MatchError` and responded 500.
 - `ExShopifyApp.Web.CacheBodyReader` now passes the `Plug.Parsers` options, such
   as `:length` and `:read_timeout`, to a non-webhook body read. Before, it dropped
-  them and Plug's 8 MB default applied.
+  them and Plug's 8 MB default applied. A `application/x-www-form-urlencoded` body
+  is now limited to the 1 MB default of `Plug.Parsers.URLENCODED`; give `:length` to
+  `Plug.Parsers` to accept a larger one. Multipart uploads are not affected.
 
 ## [1.4.2]
 
