@@ -2,16 +2,6 @@
 
 Security findings from the review that #14 did not fix. The most severe come first.
 
-## Check all session token claims
-
-`lib/ex_shopify_app/token.ex` checks the signature, plus `exp` and `nbf` when the token has them. [Shopify's docs](https://shopify.dev/docs/apps/build/authentication-authorization/id-tokens) also require these checks:
-
-- [ ] `aud` equals `ExShopifyApp.api_key/0`.
-- [ ] The `iss` and `dest` hostnames are equal.
-- [ ] `exp` and `nbf` are present. Guardian skips a claim that the token does not carry.
-
-Override `verify_claims/2` in `ExShopifyApp.Token`; `api_key/0` is read at runtime, so a compile-time `claims:` option on the pipeline can't do it.
-
 ## Filter the access token from debug logs
 
 `Graphql.client(shop, debug: true)` adds `Tesla.Middleware.Logger` (`lib/ex_shopify_app/graphql.ex:47`), which logs request headers at `debug` level, including `x-shopify-access-token`.

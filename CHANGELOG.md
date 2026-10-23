@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExShopifyApp.Plugs.AllowIframe` now sets only the `frame-ancestors` directive
   and keeps the other directives of an existing `content-security-policy` header.
   Before, it replaced the header and dropped the host's policy, such as `script-src`.
+- `ExShopifyApp.Token` now rejects a session token when `aud` is not
+  `ExShopifyApp.api_key/0`, when the `iss` and `dest` hostnames differ, or when
+  `exp` or `nbf` is absent.
 
 ## [1.4.2]
 
