@@ -2,12 +2,6 @@
 
 Security findings from the review that #14 did not fix. The most severe come first.
 
-## Keep the App Events token out of crash reports
-
-`AppEvents.TokenServer` keeps the bearer JWT in its state. A crash report prints that state.
-
-- [ ] Implement `format_status/1` and redact `:token`.
-
 ## Return 413 for a body over the limit in `CacheBodyReader`
 
 `lib/ex_shopify_app/web/body_reader.ex:19` matches only `{:ok, body, conn}`. A webhook body over `:length` makes `Plug.Conn.read_body/2` return `{:more, _, conn}`, and the match raises, so the response is a 500, not a 413.

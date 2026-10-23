@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExShopifyApp.Graphql.client(shop, debug: true)` now filters the
   `x-shopify-access-token` header from the debug log, in addition to the
   `:filter_headers` of the `:tesla` config.
+- `ExShopifyApp.AppEvents.TokenServer` now redacts the cached token from crash
+  reports and `:sys.get_status/1`.
 
 ## [1.4.2]
 

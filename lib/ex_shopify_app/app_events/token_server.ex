@@ -84,6 +84,12 @@ defmodule ExShopifyApp.AppEvents.TokenServer do
   def handle_call(:reset, _from, state),
     do: {:reply, :ok, %{state | token: nil}}
 
+  @impl true
+  def format_status(%{state: %{token: {_token, expires_at}} = state} = status),
+    do: %{status | state: %{state | token: {:redacted, expires_at}}}
+
+  def format_status(status), do: status
+
   defp refresh(%{fetcher: fetcher} = state) do
     case fetcher.() do
       {:ok, token, expires_in} ->
