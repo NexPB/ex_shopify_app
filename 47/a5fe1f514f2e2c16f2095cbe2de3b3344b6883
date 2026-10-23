@@ -1,0 +1,24 @@
+test/ex_shopify_app/graphql_test.exs
+  s_04c876bb80c2a5::t_7831b9c715c35b 70-76
+lib/ex_shopify_app/graphql.ex
+  s_04c876bb80c2a5::t_02867c1e765e48 47,53-60
+  s_04c876bb80c2a5::t_0afee7696a2102 61-62
+CHANGELOG.md
+  s_04c876bb80c2a5::t_e6bf7b4bdcc776 20-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "47a5fe1f514f2e2c16f2095cbe2de3b3344b6883",
+  "prompts": {},
+  "sessions": {
+    "s_04c876bb80c2a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d568c8cb-0dca-44ff-84c6-542daab62ca6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
