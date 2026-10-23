@@ -1,0 +1,19 @@
+CHANGELOG.md
+  s_718249f4fa0a00::t_c6a18ec5276ed2 25-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d4cfb80133888dd6be1578854567e3380349e7e",
+  "prompts": {},
+  "sessions": {
+    "s_718249f4fa0a00": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "93032d71-e106-488e-ae98-afb42bab8161",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
