@@ -7,7 +7,9 @@ defmodule ExShopifyApp.AccessToken do
   full expiry metadata.
 
   Every request to Shopify is bounded at 15 seconds; a request that exceeds it returns
-  `{:error, :timeout}`.
+  `{:error, :timeout}`. Every function raises `ArgumentError` when the shop's
+  `:shopify_domain` is not a `{shop}.myshopify.com` hostname (see
+  `ExShopifyApp.Shop.valid_domain?/1`).
 
   Docs:
   - <https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/token-exchange#example>
@@ -124,7 +126,7 @@ defmodule ExShopifyApp.AccessToken do
 
   @spec client(Shop.t()) :: Tesla.Client.t()
   def client(%{shopify_domain: shopify_domain} = _shop) do
-    host = Shop.normalize_domain(shopify_domain)
+    host = Shop.validate_domain!(shopify_domain)
 
     Tesla.client(
       [

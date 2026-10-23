@@ -67,6 +67,12 @@ defmodule ExShopifyApp.GraphqlTest do
                |> Graphql.client()
                |> Graphql.query("query { __typename }")
     end
+
+    test "raises without sending the access token to a host other than {shop}.myshopify.com" do
+      assert_raise ArgumentError, fn ->
+        Graphql.client(%{@shop | shopify_domain: "evil.example#.myshopify.com"})
+      end
+    end
   end
 
   describe "unwrap/2" do
