@@ -2,10 +2,14 @@ defmodule ExShopifyApp.Plugs.AssignShop do
   @moduledoc """
   A plug to assign a shop identified by a token or header.
 
+  Responds `401` and halts when no `{shop}.myshopify.com` domain is found.
+
   ## Options
 
   - `:get_shop_by_domain` - A function that fetches the Shop resource by domain.
-  - `:type` - Can be `:token` or `:header`. Defaults to `:token`.
+  - `:type` - Can be `:token` or `:header`. Defaults to `:token`. `:header` reads
+    `x-shopify-shop-domain` and requires `ExShopifyApp.Plugs.Hmac` with
+    `scheme: :webhook` earlier in the pipeline.
 
   ## Example
 
@@ -14,6 +18,7 @@ defmodule ExShopifyApp.Plugs.AssignShop do
 
   """
 
+  alias ExShopifyApp.Shop
   alias ExShopifyApp.Token
   alias Plug.Conn
 
@@ -32,13 +37,17 @@ defmodule ExShopifyApp.Plugs.AssignShop do
           Token.Plug.current_resource(conn)
 
         :header ->
-          case Conn.get_req_header(conn, "x-shopify-shop-domain") do
-            [shopify_domain] -> shopify_domain
+          # Shopify's webhook HMAC does not cover this header: a verified body rejects
+          # forged requests, not a replayed body sent with a different header.
+          with :webhook <- conn.private[:ex_shopify_app_hmac],
+               [shopify_domain] <- Conn.get_req_header(conn, "x-shopify-shop-domain") do
+            shopify_domain
+          else
             _ -> nil
           end
       end
 
-    if is_binary(shopify_domain) do
+    if Shop.valid_domain?(shopify_domain) do
       get_shop = Keyword.fetch!(opts, :get_shop_by_domain)
 
       conn

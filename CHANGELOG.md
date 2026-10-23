@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Changed
+
+- **Breaking:** `ExShopifyApp.Plugs.Hmac` requires a `:scheme` option, `:webhook` or
+  `:app_proxy`, and accepts only that signature. Before, any route accepted either
+  one, so an app proxy signature, which does not sign the body, passed on a webhook
+  route.
+- **Breaking:** `ExShopifyApp.Plugs.AssignShop` with `type: :header` responds `401`
+  unless `ExShopifyApp.Plugs.Hmac` verified the request with `scheme: :webhook`.
+- `ExShopifyApp.AccessToken`, `ExShopifyApp.Graphql.client/2`, `api_uri/2` and
+  `ExShopifyApp.Billing.pricing_url/2` raise `ArgumentError` unless the shop domain
+  is a `{shop}.myshopify.com` hostname, so the client secret and access tokens are
+  sent only to Shopify. `AssignShop` responds `401` for any other domain.
+
+### Added
+
+- `ExShopifyApp.Shop.valid_domain?/1` and `validate_domain!/1`.
+- `ExShopifyApp.Plugs.Hmac` rejects an app proxy request whose `timestamp` is more
+  than `:max_age` seconds (default `300`) from now.
+
+### Fixed
+
+- `ExShopifyApp.Plugs.Hmac` verifies app proxy requests with a repeated or bracketed
+  query key, such as `extra=1&extra=2`.
 
 ## [1.4.2]
 
