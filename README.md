@@ -122,8 +122,7 @@ set an encrypted Ecto type for both fields, for example a
 config :ex_shopify_app, ExShopifyApp.AccessToken.Token, token_type: MyApp.Encrypted.Binary
 ```
 
-The library reads the type at compile time. Run `mix deps.compile ex_shopify_app --force`
-after you change it. A binary type needs `bytea` columns:
+The library reads the type at runtime. A binary type needs `bytea` columns:
 
 ```elixir
 defmodule MyApp.Repo.Migrations.EncryptShopifyAccessTokens do
