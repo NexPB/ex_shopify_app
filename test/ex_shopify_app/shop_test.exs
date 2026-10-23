@@ -7,25 +7,34 @@ defmodule ExShopifyApp.ShopTest do
 
   describe "valid_domain?/1" do
     test "accepts a {shop}.myshopify.com hostname, with or without https://" do
-      assert Shop.valid_domain?("acme.myshopify.com")
-      assert Shop.valid_domain?("acme-2.myshopify.com")
-      assert Shop.valid_domain?("https://acme.myshopify.com")
+      for domain <- [
+            "acme.myshopify.com",
+            "acme-2.myshopify.com",
+            "https://acme.myshopify.com"
+          ] do
+        assert Shop.valid_domain?(domain), "expected #{inspect(domain)} to be valid"
+      end
     end
 
     test "rejects hosts that only contain or end with .myshopify.com" do
-      refute Shop.valid_domain?("acme.myshopify.com.evil.example")
-      refute Shop.valid_domain?("evil.example#.myshopify.com")
-      refute Shop.valid_domain?("evil.example/.myshopify.com")
-      refute Shop.valid_domain?("evil.example?.myshopify.com")
-      refute Shop.valid_domain?("user@acme.myshopify.com")
-      refute Shop.valid_domain?("acme.myshopify.com\n")
-      refute Shop.valid_domain?("-acme.myshopify.com")
-      refute Shop.valid_domain?(".myshopify.com")
+      for domain <- [
+            "acme.myshopify.com.evil.example",
+            "evil.example#.myshopify.com",
+            "evil.example/.myshopify.com",
+            "evil.example?.myshopify.com",
+            "user@acme.myshopify.com",
+            "acme.myshopify.com\n",
+            "-acme.myshopify.com",
+            ".myshopify.com"
+          ] do
+        refute Shop.valid_domain?(domain), "expected #{inspect(domain)} to be invalid"
+      end
     end
 
     test "rejects non-binaries" do
-      refute Shop.valid_domain?(nil)
-      refute Shop.valid_domain?(%{shopify_domain: "acme.myshopify.com"})
+      for domain <- [nil, %{shopify_domain: "acme.myshopify.com"}] do
+        refute Shop.valid_domain?(domain), "expected #{inspect(domain)} to be invalid"
+      end
     end
   end
 
