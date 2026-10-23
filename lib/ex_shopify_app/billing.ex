@@ -66,15 +66,10 @@ defmodule ExShopifyApp.Billing do
   @spec pricing_url(Shop.t(), String.t()) :: String.t()
   def pricing_url(%{shopify_domain: shopify_domain}, app_handle)
       when is_binary(app_handle) do
-    normalized_domain = Shop.normalize_domain(shopify_domain)
-
     store_handle =
-      if String.ends_with?(normalized_domain, ".myshopify.com") do
-        String.replace_suffix(normalized_domain, ".myshopify.com", "")
-      else
-        raise ArgumentError,
-              "expected shopify_domain to end with .myshopify.com, got: #{inspect(normalized_domain)}"
-      end
+      shopify_domain
+      |> Shop.validate_domain!()
+      |> String.replace_suffix(".myshopify.com", "")
 
     "https://admin.shopify.com/store/#{store_handle}/charges/#{app_handle}/pricing_plans"
   end

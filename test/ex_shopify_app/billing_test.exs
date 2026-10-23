@@ -15,5 +15,11 @@ defmodule ExShopifyApp.BillingTest do
       assert Billing.pricing_url(%{shopify_domain: "https://acme.myshopify.com"}, "my-app") ==
                "https://admin.shopify.com/store/acme/charges/my-app/pricing_plans"
     end
+
+    test "raises for a domain other than {shop}.myshopify.com" do
+      assert_raise ArgumentError, fn ->
+        Billing.pricing_url(%{shopify_domain: "evil.example#.myshopify.com"}, "my-app")
+      end
+    end
   end
 end
