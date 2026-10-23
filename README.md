@@ -111,6 +111,44 @@ It scans every `:interval` (default 6h) for chains whose refresh token expires
 within `:window` (default 7 days) and refreshes them through the store's lock —
 safe to run on every node. Lifetime (non-expiring) rows are never touched.
 
+### 6. Encrypt the stored tokens (optional)
+
+`access_token` and `refresh_token` are plaintext columns by default. To encrypt them,
+set an encrypted Ecto type for both fields, for example a
+[`Cloak.Ecto.Binary`](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.Binary.html) type:
+
+```elixir
+# config/config.exs
+config :ex_shopify_app, ExShopifyApp.AccessToken.Token, token_type: MyApp.Encrypted.Binary
+```
+
+The library reads the type at compile time. Run `mix deps.compile ex_shopify_app --force`
+after you change it. A binary type needs `bytea` columns:
+
+```elixir
+defmodule MyApp.Repo.Migrations.EncryptShopifyAccessTokens do
+  use Ecto.Migration
+
+  def change do
+    execute(
+      """
+      ALTER TABLE shopify_access_tokens
+        ALTER COLUMN access_token TYPE bytea USING convert_to(access_token, 'UTF8'),
+        ALTER COLUMN refresh_token TYPE bytea USING convert_to(refresh_token, 'UTF8')
+      """,
+      """
+      ALTER TABLE shopify_access_tokens
+        ALTER COLUMN access_token TYPE text USING convert_from(access_token, 'UTF8'),
+        ALTER COLUMN refresh_token TYPE text USING convert_from(refresh_token, 'UTF8')
+      """
+    )
+  end
+end
+```
+
+Rows stored before this change stay plaintext, and loading them fails. Encrypt them
+in a data migration, for example with `MyApp.Vault.encrypt!/1`.
+
 ## Safety guarantees
 
 The store provides **at-least-once persistence attempt after a refresh response**, not

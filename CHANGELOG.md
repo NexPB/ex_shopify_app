@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `config :ex_shopify_app, ExShopifyApp.AccessToken.Token, token_type: type` sets
+  the Ecto type of `access_token` and `refresh_token`, so a host app can encrypt
+  them at rest. See the README.
+
 ### Security
 
 - The minimum versions are now `tesla` 1.18.3, `mint` 1.9.0, `plug` 1.19.3 and
