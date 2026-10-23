@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExShopifyApp.Token` now rejects a session token when `aud` is not
   `ExShopifyApp.api_key/0`, when the `iss` and `dest` hostnames differ, or when
   `exp` or `nbf` is absent.
+- `ExShopifyApp.Graphql.client(shop, debug: true)` now filters the
+  `x-shopify-access-token` header from the debug log, in addition to the
+  `:filter_headers` of the `:tesla` config.
 
 ## [1.4.2]
 

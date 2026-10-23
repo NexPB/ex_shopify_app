@@ -2,12 +2,6 @@
 
 Security findings from the review that #14 did not fix. The most severe come first.
 
-## Filter the access token from debug logs
-
-`Graphql.client(shop, debug: true)` adds `Tesla.Middleware.Logger` (`lib/ex_shopify_app/graphql.ex:47`), which logs request headers at `debug` level, including `x-shopify-access-token`.
-
-- [ ] Pass `filter_headers: ["x-shopify-access-token"]` to the logger.
-
 ## Keep the App Events token out of crash reports
 
 `AppEvents.TokenServer` keeps the bearer JWT in its state. A crash report prints that state.
