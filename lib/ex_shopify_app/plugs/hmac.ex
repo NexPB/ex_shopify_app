@@ -26,13 +26,15 @@ defmodule ExShopifyApp.Plugs.Hmac do
   @schemes [:webhook, :app_proxy]
 
   def init(opts) do
-    unless Keyword.get(opts, :scheme) in @schemes do
-      raise ArgumentError,
-            "Plug requires a :scheme option, one of #{inspect(@schemes)}, " <>
-              "got: #{inspect(Keyword.get(opts, :scheme))}"
-    end
+    case Keyword.get(opts, :scheme) do
+      scheme when scheme in @schemes ->
+        Keyword.put_new(opts, :max_age, 300)
 
-    Keyword.put_new(opts, :max_age, 300)
+      scheme ->
+        raise ArgumentError,
+              "Plug requires a :scheme option, one of #{inspect(@schemes)}, " <>
+                "got: #{inspect(scheme)}"
+    end
   end
 
   def call(%Conn{} = conn, opts) do
