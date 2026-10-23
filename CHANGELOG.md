@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Security
+
+- The minimum versions are now `tesla` 1.18.3, `mint` 1.9.0, `plug` 1.19.3 and
+  `guardian` 2.5.0. Older versions have published security advisories.
 
 ## [1.4.2]
 
