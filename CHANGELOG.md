@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExShopifyApp.AppEvents.TokenServer` now redacts the cached token from crash
   reports and `:sys.get_status/1`.
 
+### Fixed
+
+- `ExShopifyApp.Web.CacheBodyReader` now responds 413 to a webhook body over
+  `:length`. Before, it raised a `MatchError` and responded 500.
+
 ## [1.4.2]
 
 ### Fixed

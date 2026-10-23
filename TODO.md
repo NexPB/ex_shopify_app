@@ -2,12 +2,6 @@
 
 Security findings from the review that #14 did not fix. The most severe come first.
 
-## Return 413 for a body over the limit in `CacheBodyReader`
-
-`lib/ex_shopify_app/web/body_reader.ex:19` matches only `{:ok, body, conn}`. A webhook body over `:length` makes `Plug.Conn.read_body/2` return `{:more, _, conn}`, and the match raises, so the response is a 500, not a 413.
-
-- [ ] Return `{:more, body, conn}` to `Plug.Parsers`, which raises `Plug.Parsers.RequestTooLargeError` (413).
-
 ## Encrypt stored tokens
 
 `shopify_access_tokens.access_token` and `refresh_token` are plaintext columns. Anyone with read access to the database or its backups can use them to call the Admin API.
