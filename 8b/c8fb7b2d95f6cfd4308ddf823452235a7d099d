@@ -1,0 +1,24 @@
+CHANGELOG.md
+  s_04c876bb80c2a5::t_1286742f87ff6f 23-24
+lib/ex_shopify_app/app_events/token_server.ex
+  s_04c876bb80c2a5::t_fac82b81c15f33 87-92
+test/ex_shopify_app/app_events/token_server_test.exs
+  s_04c876bb80c2a5::t_8feb2e69327f75 1-7,9-16
+  s_04c876bb80c2a5::t_09237f424fa675 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8bc8fb7b2d95f6cfd4308ddf823452235a7d099d",
+  "prompts": {},
+  "sessions": {
+    "s_04c876bb80c2a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d568c8cb-0dca-44ff-84c6-542daab62ca6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
