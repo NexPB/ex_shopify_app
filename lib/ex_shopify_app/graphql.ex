@@ -44,10 +44,20 @@ defmodule ExShopifyApp.Graphql do
 
     middleware =
       if debug?,
-        do: [{Tesla.Middleware.Logger, []} | middleware],
+        do: [{Tesla.Middleware.Logger, filter_headers: filter_headers()} | middleware],
         else: middleware
 
     Tesla.client(middleware, ExShopifyApp.tesla_adapter())
+  end
+
+  # The middleware option replaces the `:filter_headers` list of the host's `:tesla` config.
+  defp filter_headers do
+    configured =
+      :tesla
+      |> Application.get_env(Tesla.Middleware.Logger, [])
+      |> Keyword.get(:filter_headers, [])
+
+    ["x-shopify-access-token" | configured]
   end
 
   @doc """

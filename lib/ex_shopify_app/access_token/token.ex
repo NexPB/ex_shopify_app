@@ -13,6 +13,11 @@ defmodule ExShopifyApp.AccessToken.Token do
   The struct redacts `:access_token` and `:refresh_token` from `inspect/2` output so
   token values never leak into logs.
 
+  `:access_token` and `:refresh_token` use the Ecto type set with
+  `config :ex_shopify_app, #{inspect(__MODULE__)}, token_type: type`, `:string` by
+  default. Set an encrypted type, such as a `Cloak.Ecto.Binary` type, to encrypt them
+  at rest. See `ExShopifyApp.AccessToken.TokenType`.
+
   Docs: <https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/offline-access-tokens>
   """
 
@@ -40,8 +45,8 @@ defmodule ExShopifyApp.AccessToken.Token do
   @derive {Inspect, except: [:access_token, :refresh_token]}
   @primary_key {:shopify_domain, :string, autogenerate: false}
   schema "shopify_access_tokens" do
-    field :access_token, :string
-    field :refresh_token, :string
+    field :access_token, ExShopifyApp.AccessToken.TokenType
+    field :refresh_token, ExShopifyApp.AccessToken.TokenType
     field :scope, :string
 
     field :expires_in, :integer

@@ -11,16 +11,22 @@ defmodule ExShopifyApp.Web.CacheBodyReader do
   @doc """
   Read and "cache" the body.
   Store the body in the `assigns` under the `:raw_body` key.
+
+  For a webhook, `:length` defaults to 10 MB; a `:length` given to `Plug.Parsers`
+  overrides it. Returns `{:more, partial, conn}` without caching it when the body exceeds
+  `:length`; `Plug.Parsers` then raises `Plug.Parsers.RequestTooLargeError` (413).
   """
   def read_body(%Conn{} = conn, opts) do
     if is_webhook_request?(conn) do
       # https://hexdocs.pm/plug/1.16.1/Plug.Parsers.html#module-custom-body-reader
       opts = Keyword.merge([length: @ten_mb], opts)
-      {:ok, body, conn} = Plug.Conn.read_body(conn, opts)
-      conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
-      {:ok, body, conn}
+
+      with {:ok, body, conn} <- Plug.Conn.read_body(conn, opts) do
+        conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
+        {:ok, body, conn}
+      end
     else
-      Plug.Conn.read_body(conn, [])
+      Plug.Conn.read_body(conn, opts)
     end
   end
 

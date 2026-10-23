@@ -7,7 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(WIP)
+### Added
+
+- `config :ex_shopify_app, ExShopifyApp.AccessToken.Token, token_type: type` sets
+  the Ecto type of `access_token` and `refresh_token`, so a host app can encrypt
+  them at rest. See the README.
+
+### Security
+
+- The minimum versions are now `tesla` 1.18.3, `mint` 1.9.0, `plug` 1.19.3 and
+  `guardian` 2.5.0. Older versions have published security advisories.
+- `ExShopifyApp.Plugs.AllowIframe` now sets only the `frame-ancestors` directive
+  and keeps the other directives of an existing `content-security-policy` header.
+  Before, it replaced the header and dropped the host's policy, such as `script-src`.
+- `ExShopifyApp.Token` now rejects a session token when `aud` is not
+  `ExShopifyApp.api_key/0`, when the `iss` and `dest` hostnames differ, or when
+  `exp` or `nbf` is absent. This also rejects checkout and customer account UI
+  extension session tokens, which have no `iss`, and tokens from
+  `ExShopifyApp.Token.encode_and_sign/3`, which have no `aud`.
+- `ExShopifyApp.Graphql.client(shop, debug: true)` now passes
+  `x-shopify-access-token` to the `:filter_headers` of `Tesla.Middleware.Logger`, in
+  addition to the `:filter_headers` of the `:tesla` config. The logger runs before the
+  header is set, so earlier versions did not log the token either.
+- `ExShopifyApp.AppEvents.TokenServer` now redacts the cached token from crash
+  reports and `:sys.get_status/1`.
+
+### Fixed
+
+- `ExShopifyApp.Web.CacheBodyReader` now responds 413 to a webhook body over
+  `:length`. Before, it raised a `MatchError` and responded 500.
+- `ExShopifyApp.Web.CacheBodyReader` now passes the `Plug.Parsers` options, such
+  as `:length` and `:read_timeout`, to a non-webhook body read. Before, it dropped
+  them and Plug's 8 MB default applied. A `application/x-www-form-urlencoded` body
+  is now limited to the 1 MB default of `Plug.Parsers.URLENCODED`; give `:length` to
+  `Plug.Parsers` to accept a larger one. Multipart uploads are not affected.
 
 ## [1.4.2]
 

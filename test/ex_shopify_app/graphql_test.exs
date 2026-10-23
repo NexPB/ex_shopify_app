@@ -67,6 +67,13 @@ defmodule ExShopifyApp.GraphqlTest do
                |> Graphql.client()
                |> Graphql.query("query { __typename }")
     end
+
+    test "filters the access token from the :debug logger" do
+      assert [{Tesla.Middleware.Logger, opts} | _] =
+               @shop |> Graphql.client(debug: true) |> Tesla.Client.middleware()
+
+      assert "x-shopify-access-token" in opts[:filter_headers]
+    end
   end
 
   describe "unwrap/2" do
