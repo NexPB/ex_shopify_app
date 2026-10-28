@@ -10,7 +10,8 @@ defmodule ExShopifyApp.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -46,6 +47,12 @@ defmodule ExShopifyApp.MixProject do
 
   defp description do
     "Your entrypoint to create a Shopify Application in Elixir."
+  end
+
+  defp docs do
+    [
+      extras: ["UPGRADE.md"]
+    ]
   end
 
   defp package() do
