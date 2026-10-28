@@ -36,13 +36,12 @@ defmodule ExShopifyApp.Plugs.VerifyHeader do
   end
 
   defp fetch_token(conn) do
-    conn
-    |> get_req_header("authorization")
-    |> Enum.find_value(:no_token_found, fn header ->
-      case Regex.run(~r/^Bearer:?\s+(.*)$/i, String.trim(header)) do
-        [_, token] -> {:ok, String.trim(token)}
-        _ -> nil
-      end
-    end)
+    with [header] <- get_req_header(conn, "authorization"),
+         [scheme, token] <- String.split(header, " ", parts: 2),
+         "bearer" <- String.downcase(scheme) do
+      {:ok, String.trim(token)}
+    else
+      _ -> :no_token_found
+    end
   end
 end

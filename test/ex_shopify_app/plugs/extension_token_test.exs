@@ -33,10 +33,10 @@ defmodule ExShopifyApp.Plugs.ExtensionTokenTest do
     token
   end
 
-  defp run(claims) do
+  defp run(claims, scheme \\ "Bearer") do
     :post
     |> conn("/extension")
-    |> Conn.put_req_header("authorization", "Bearer " <> sign(claims))
+    |> Conn.put_req_header("authorization", scheme <> " " <> sign(claims))
     |> ExtensionToken.call(ExtensionToken.init([]))
   end
 
@@ -55,6 +55,24 @@ defmodule ExShopifyApp.Plugs.ExtensionTokenTest do
     for claim <- ["dest", "exp", "nbf"] do
       assert run(Map.delete(claims(), claim)).status == 401
     end
+  end
+
+  test "reads the bearer scheme in any case" do
+    refute run(claims(), "bearer").halted
+  end
+
+  test "rejects another scheme, or a scheme followed by a colon" do
+    assert run(claims(), "Basic").status == 401
+    assert run(claims(), "Bearer:").status == 401
+  end
+
+  test "rejects a repeated authorization header" do
+    header = "Bearer " <> sign(claims())
+    conn = conn(:post, "/extension")
+
+    conn = %{conn | req_headers: [{"authorization", header}, {"authorization", header}]}
+
+    assert ExtensionToken.call(conn, ExtensionToken.init([])).status == 401
   end
 
   test "rejects a request without a token" do
