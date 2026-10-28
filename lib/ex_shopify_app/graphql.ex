@@ -91,10 +91,12 @@ defmodule ExShopifyApp.Graphql do
 
   @doc """
   Returns the base URI for the Shopify Admin API.
+
+  Raises `ArgumentError` when `shopify_domain` is not a `{shop}.myshopify.com` hostname.
   """
   @spec api_uri(String.t(), String.t()) :: URI.t()
   def api_uri(shopify_domain, api_version) do
-    shopify_domain = Shop.normalize_domain(shopify_domain)
+    shopify_domain = Shop.validate_domain!(shopify_domain)
 
     %URI{
       scheme: "https",

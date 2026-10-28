@@ -10,8 +10,9 @@ defmodule ExShopifyApp.AccessToken.Token do
   Lifetime (non-expiring) tokens leave `:expires_at` and `:refresh_token_expires_at`
   as `nil`; such tokens are never considered expired or stale.
 
-  The struct redacts `:access_token` and `:refresh_token` from `inspect/2` output so
-  token values never leak into logs.
+  `:access_token` and `:refresh_token` are redacted fields: `inspect/2` leaves them out of
+  the struct and shows `**redacted**` for them in a changeset's changes, so token values
+  never leak into logs or error reports.
 
   `:access_token` and `:refresh_token` use the Ecto type set with
   `config :ex_shopify_app, #{inspect(__MODULE__)}, token_type: type`, `:string` by
@@ -42,11 +43,10 @@ defmodule ExShopifyApp.AccessToken.Token do
           refresh_generation: non_neg_integer()
         }
 
-  @derive {Inspect, except: [:access_token, :refresh_token]}
   @primary_key {:shopify_domain, :string, autogenerate: false}
   schema "shopify_access_tokens" do
-    field :access_token, ExShopifyApp.AccessToken.TokenType
-    field :refresh_token, ExShopifyApp.AccessToken.TokenType
+    field :access_token, ExShopifyApp.AccessToken.TokenType, redact: true
+    field :refresh_token, ExShopifyApp.AccessToken.TokenType, redact: true
     field :scope, :string
 
     field :expires_in, :integer

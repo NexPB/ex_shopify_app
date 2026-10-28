@@ -229,6 +229,40 @@ defmodule ExShopifyApp.AccessToken.TokenTest do
     end
   end
 
+  describe "inspect/2" do
+    test "leaves the tokens out of the struct" do
+      inspected = inspect(expiring_token(), limit: :infinity)
+
+      refute inspected =~ "shpat_123"
+      refute inspected =~ "shprt_456"
+    end
+
+    test "redacts the tokens in a changeset" do
+      inspected =
+        %Token{}
+        |> Token.changeset(%{shopify_domain: "shop.myshopify.com"})
+        |> Ecto.Changeset.change(access_token: "shpat_123", refresh_token: "shprt_456")
+        |> inspect(limit: :infinity)
+
+      refute inspected =~ "shpat_123"
+      refute inspected =~ "shprt_456"
+    end
+
+    test "redacts the refreshed tokens in a refresh changeset" do
+      refreshed =
+        expiring_token()
+        |> Map.merge(%{access_token: "shpat_new", refresh_token: "shprt_new"})
+
+      inspected =
+        refreshed
+        |> Token.prepare_refresh_changes(expiring_token())
+        |> inspect(limit: :infinity)
+
+      refute inspected =~ "shpat_new"
+      refute inspected =~ "shprt_new"
+    end
+  end
+
   describe "refresh_token_expired?/2" do
     setup do
       %{token: expiring_token()}

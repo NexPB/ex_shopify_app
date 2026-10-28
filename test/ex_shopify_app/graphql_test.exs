@@ -74,6 +74,12 @@ defmodule ExShopifyApp.GraphqlTest do
 
       assert "x-shopify-access-token" in opts[:filter_headers]
     end
+
+    test "raises without sending the access token to a host other than {shop}.myshopify.com" do
+      assert_raise ArgumentError, fn ->
+        Graphql.client(%{@shop | shopify_domain: "evil.example#.myshopify.com"})
+      end
+    end
   end
 
   describe "unwrap/2" do

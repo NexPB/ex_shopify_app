@@ -78,6 +78,12 @@ defmodule ExShopifyApp.AccessTokenTest do
 
       assert {:error, %Tesla.Env{status: 400}} = AccessToken.fetch(@shop, "session-token")
     end
+
+    test "raises without sending the client secret to a host other than {shop}.myshopify.com" do
+      assert_raise ArgumentError, fn ->
+        AccessToken.fetch(%{shopify_domain: "evil.example#.myshopify.com"}, "session-token")
+      end
+    end
   end
 
   describe "refresh/2" do

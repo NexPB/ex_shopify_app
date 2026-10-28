@@ -7,11 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `ExShopifyApp.Plugs.Hmac` requires a `:scheme` option, `:webhook` or
+  `:app_proxy`, and accepts only that signature. Before, any route accepted either
+  one, so an app proxy signature, which does not sign the body, passed on a webhook
+  route.
+- **Breaking:** `ExShopifyApp.Plugs.AssignShop` with `type: :header` responds `401`
+  unless `ExShopifyApp.Plugs.Hmac` verified the request with `scheme: :webhook`.
+- `ExShopifyApp.AccessToken`, `ExShopifyApp.Graphql.client/2`, `api_uri/2` and
+  `ExShopifyApp.Billing.pricing_url/2` raise `ArgumentError` unless the shop domain
+  is a `{shop}.myshopify.com` hostname, so the client secret and access tokens are
+  sent only to Shopify. `AssignShop` responds `401` for any other domain.
+
 ### Added
 
 - `config :ex_shopify_app, ExShopifyApp.AccessToken.Token, token_type: type` sets
   the Ecto type of `access_token` and `refresh_token`, so a host app can encrypt
   them at rest. See the README.
+- `ExShopifyApp.Shop.valid_domain?/1` and `validate_domain!/1`.
+- `ExShopifyApp.Plugs.Hmac` rejects an app proxy request whose `timestamp` is more
+  than `:max_age` seconds (default `300`) from now.
 
 ### Security
 
@@ -41,6 +57,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them and Plug's 8 MB default applied. A `application/x-www-form-urlencoded` body
   is now limited to the 1 MB default of `Plug.Parsers.URLENCODED`; give `:length` to
   `Plug.Parsers` to accept a larger one. Multipart uploads are not affected.
+- `ExShopifyApp.Plugs.Hmac` verifies app proxy requests with a repeated or bracketed
+  query key, such as `extra=1&extra=2`.
+
+## [1.5.0]
+
+### Added
+
+- `ExShopifyApp.Storefront.client/2`: an authenticated Storefront API client that
+  sends the shop's offline access token as a private Storefront token. Accepts
+  `:api_version`, `:buyer_ip` and `:debug`.
+- `ExShopifyApp.Storefront.query/3`: sends a Storefront GraphQL request; unwrap the
+  result with `ExShopifyApp.Graphql.unwrap/2`.
+
+## [1.4.3]
+
+### Fixed
+
+- `ExShopifyApp.AccessToken.Token`'s `:access_token` and `:refresh_token` are now
+  redacted Ecto fields, so inspecting a token changeset no longer prints them. Before,
+  only the struct hid them, and a failed write after a successful refresh returned
+  `{:token_persistence_failed_after_refresh, %PersistenceFailure{}}` whose changeset
+  `reason` printed both new tokens wherever the error was inspected or reported.
 
 ## [1.4.2]
 
@@ -138,7 +176,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.4.2...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.5.0...HEAD
+[1.5.0]: https://github.com/NexPB/ex_shopify_app/compare/1.4.3...1.5.0
+[1.4.3]: https://github.com/NexPB/ex_shopify_app/compare/1.4.2...1.4.3
 [1.4.2]: https://github.com/NexPB/ex_shopify_app/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/NexPB/ex_shopify_app/compare/1.4.0...1.4.1
 [1.4.0]: https://github.com/NexPB/ex_shopify_app/compare/1.3.0...1.4.0
