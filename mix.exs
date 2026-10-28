@@ -4,7 +4,7 @@ defmodule ExShopifyApp.MixProject do
   def project do
     [
       app: :ex_shopify_app,
-      version: "2.0.0-rc.0",
+      version: "2.0.0-rc.1",
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
