@@ -166,6 +166,11 @@ read the merchant's active plan from the Admin API. See [docs/BILLING.md](docs/B
 for the full guide; the entry points are `ExShopifyApp.Billing` and
 `ExShopifyApp.Billing.Subscription`.
 
+## Storefront API
+
+Query the Storefront API server-side with the shop's offline access token. See
+[docs/STOREFRONT.md](docs/STOREFRONT.md); the entry point is `ExShopifyApp.Storefront`.
+
 ## Docs
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc) and

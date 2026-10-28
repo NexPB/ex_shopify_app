@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (WIP)
 
+## [1.5.0]
+
+### Added
+
+- `ExShopifyApp.Storefront.client/2`: an authenticated Storefront API client that
+  sends the shop's offline access token as a private Storefront token. Accepts
+  `:api_version`, `:buyer_ip` and `:debug`.
+- `ExShopifyApp.Storefront.query/3`: sends a Storefront GraphQL request; unwrap the
+  result with `ExShopifyApp.Graphql.unwrap/2`.
+
 ## [1.4.3]
 
 ### Fixed
@@ -115,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.4.3...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/1.5.0...HEAD
+[1.5.0]: https://github.com/NexPB/ex_shopify_app/compare/1.4.3...1.5.0
 [1.4.3]: https://github.com/NexPB/ex_shopify_app/compare/1.4.2...1.4.3
 [1.4.2]: https://github.com/NexPB/ex_shopify_app/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/NexPB/ex_shopify_app/compare/1.4.0...1.4.1
