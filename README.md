@@ -168,10 +168,8 @@ for the full guide; the entry points are `ExShopifyApp.Billing` and
 
 ## Storefront API
 
-Read Storefront data server-side with `ExShopifyApp.Storefront`, authenticated with the
-shop's offline access token as a private Storefront token. The app must hold the
-`unauthenticated_*` access scopes its queries need, otherwise Shopify answers
-`403 ACCESS_DENIED`.
+Query the Storefront API server-side with the shop's offline access token. See
+[docs/STOREFRONT.md](docs/STOREFRONT.md); the entry point is `ExShopifyApp.Storefront`.
 
 ## Docs
 
