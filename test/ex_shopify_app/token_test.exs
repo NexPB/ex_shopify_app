@@ -55,6 +55,31 @@ defmodule ExShopifyApp.TokenTest do
     assert {:error, :missing_nbf} = verify(Map.delete(claims(), "nbf"))
   end
 
+  describe "extension: true" do
+    defp verify_extension(claims),
+      do: claims |> sign() |> Token.decode_and_verify(%{}, extension: true)
+
+    test "accepts a token without iss and with a bare dest" do
+      claims = claims(%{"dest" => "shop.myshopify.com"}) |> Map.delete("iss")
+
+      assert {:ok, _claims} = verify_extension(claims)
+
+      assert {:ok, "shop.myshopify.com", _claims} =
+               claims |> sign() |> Token.resource_from_token(%{}, extension: true)
+    end
+
+    test "rejects a token without dest, or for another app" do
+      assert {:error, :missing_dest} = verify_extension(Map.delete(claims(), "dest"))
+      assert {:error, :invalid_audience} = verify_extension(claims(%{"aud" => "other"}))
+    end
+
+    test "is required for a token without iss" do
+      claims = claims(%{"dest" => "shop.myshopify.com"}) |> Map.delete("iss")
+
+      assert {:error, :invalid_issuer} = verify(claims)
+    end
+  end
+
   test "rejects an expired token" do
     assert {:error, :token_expired} =
              verify(claims(%{"exp" => System.system_time(:second) - 3600}))

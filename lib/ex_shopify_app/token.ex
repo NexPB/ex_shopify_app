@@ -21,6 +21,11 @@ defmodule ExShopifyApp.Token do
     {:ok, shopify_domain}
   end
 
+  # Checkout and customer account UI extension tokens put the bare hostname in `dest`.
+  def resource_from_claims(%{"dest" => shopify_domain}) when is_binary(shopify_domain) do
+    {:ok, shopify_domain}
+  end
+
   def resource_from_claims(_claims) do
     {:error, :missing_shopify_domain}
   end
@@ -49,10 +54,14 @@ defmodule ExShopifyApp.Token do
   Returns `{:error, :invalid_audience}` when `aud` is not `ExShopifyApp.api_key/0`,
   `{:error, :invalid_issuer}` when the `iss` and `dest` hostnames differ, and
   `{:error, :missing_exp}` or `{:error, :missing_nbf}` when the claim is absent.
+
+  With `extension: true` in `options`, accepts a token without `iss`, as checkout and
+  customer account UI extensions send, and returns `{:error, :missing_dest}` when `dest`
+  is absent.
   """
-  def verify_claims(claims, _options) do
+  def verify_claims(claims, options) do
     with :ok <- verify_audience(claims),
-         :ok <- verify_issuer_matches_dest(claims),
+         :ok <- verify_issuer(claims, Keyword.get(options, :extension, false)),
          :ok <- verify_present(claims, "exp", :missing_exp),
          :ok <- verify_present(claims, "nbf", :missing_nbf) do
       {:ok, claims}
@@ -63,7 +72,10 @@ defmodule ExShopifyApp.Token do
     if claims["aud"] == ExShopifyApp.api_key(), do: :ok, else: {:error, :invalid_audience}
   end
 
-  defp verify_issuer_matches_dest(%{"iss" => iss, "dest" => dest})
+  defp verify_issuer(%{"dest" => dest}, true = _extension) when is_binary(dest), do: :ok
+  defp verify_issuer(_claims, true = _extension), do: {:error, :missing_dest}
+
+  defp verify_issuer(%{"iss" => iss, "dest" => dest}, false = _extension)
        when is_binary(iss) and is_binary(dest) do
     case {URI.parse(iss), URI.parse(dest)} do
       {%URI{host: host}, %URI{host: host}} when is_binary(host) and host != "" -> :ok
@@ -71,7 +83,7 @@ defmodule ExShopifyApp.Token do
     end
   end
 
-  defp verify_issuer_matches_dest(_claims), do: {:error, :invalid_issuer}
+  defp verify_issuer(_claims, false = _extension), do: {:error, :invalid_issuer}
 
   # Guardian verifies `exp` and `nbf` before this callback runs, but accepts a token
   # that omits them.
