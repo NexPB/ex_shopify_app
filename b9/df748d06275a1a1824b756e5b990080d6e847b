@@ -1,0 +1,22 @@
+lib/ex_shopify_app/plugs/assign_shop.ex
+  s_e7b3b5030f06a0::t_a673099d3e8352 10-19
+  s_e7b3b5030f06a0::t_c8aa27073d161a 55-73
+test/ex_shopify_app/plugs/assign_shop_test.exs
+  s_e7b3b5030f06a0::t_9305ef7fa6b609 56-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b9df748d06275a1a1824b756e5b990080d6e847b",
+  "prompts": {},
+  "sessions": {
+    "s_e7b3b5030f06a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32905ef0-1cbc-445d-b131-9645ac3f4bb8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
