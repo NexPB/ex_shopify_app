@@ -7,9 +7,16 @@ defmodule ExShopifyApp.Plugs.AssignShop do
   ## Options
 
   - `:get_shop_by_domain` - A function that fetches the Shop resource by domain.
-  - `:type` - Can be `:token` or `:header`. Defaults to `:token`. `:header` reads
-    `x-shopify-shop-domain` and requires `ExShopifyApp.Plugs.Hmac` with
-    `scheme: :webhook` earlier in the pipeline.
+  - `:type` - Where to read the shop domain. Defaults to `:token`.
+    - `:token` - the session token verified by `ExShopifyApp.Plugs.Token` or
+      `ExShopifyApp.Plugs.ExtensionToken`.
+    - `:header` - the `x-shopify-shop-domain` header. Requires `ExShopifyApp.Plugs.Hmac`
+      with `scheme: :webhook` earlier in the pipeline.
+    - `:app_proxy` - the `shop` query parameter. Requires `ExShopifyApp.Plugs.Hmac` with
+      `scheme: :app_proxy` earlier in the pipeline.
+    - `:flow_action` - the `shopify_domain` body parameter of a Shopify Flow action.
+      Requires `Plug.Parsers` and `ExShopifyApp.Plugs.Hmac` with `scheme: :webhook`
+      earlier in the pipeline.
 
   ## Example
 
@@ -41,6 +48,25 @@ defmodule ExShopifyApp.Plugs.AssignShop do
           # forged requests, not a replayed body sent with a different header.
           with :webhook <- conn.private[:ex_shopify_app_hmac],
                [shopify_domain] <- Conn.get_req_header(conn, "x-shopify-shop-domain") do
+            shopify_domain
+          else
+            _ -> nil
+          end
+
+        :app_proxy ->
+          # The Hmac plug signs the raw query, so read `shop` from it rather than from
+          # `query_params`, which keeps only the last of a repeated key.
+          with :app_proxy <- conn.private[:ex_shopify_app_hmac],
+               [shopify_domain] <-
+                 for({"shop", value} <- URI.query_decoder(conn.query_string), do: value) do
+            shopify_domain
+          else
+            _ -> nil
+          end
+
+        :flow_action ->
+          with :webhook <- conn.private[:ex_shopify_app_hmac],
+               %{"shopify_domain" => shopify_domain} <- conn.body_params do
             shopify_domain
           else
             _ -> nil
