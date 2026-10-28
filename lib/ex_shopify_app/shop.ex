@@ -41,4 +41,39 @@ defmodule ExShopifyApp.Shop do
   def normalize_domain(domain) when is_binary(domain) do
     String.trim_leading(domain, "https://")
   end
+
+  @doc """
+  Returns `true` when `domain` is a `{shop}.myshopify.com` hostname, with or without a
+  leading `https://`.
+
+  ## Examples
+
+      iex> ExShopifyApp.Shop.valid_domain?("acme.myshopify.com")
+      true
+
+      iex> ExShopifyApp.Shop.valid_domain?("evil.example#.myshopify.com")
+      false
+
+  """
+  @spec valid_domain?(term()) :: boolean()
+  def valid_domain?(domain) when is_binary(domain) do
+    Regex.match?(~r/\A[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com\z/, normalize_domain(domain))
+  end
+
+  def valid_domain?(_domain), do: false
+
+  @doc """
+  Returns the normalized `domain` when `valid_domain?/1` accepts it.
+
+  Raises `ArgumentError` for any other value.
+  """
+  @spec validate_domain!(term()) :: String.t()
+  def validate_domain!(domain) do
+    if valid_domain?(domain) do
+      normalize_domain(domain)
+    else
+      raise ArgumentError,
+            "expected a {shop}.myshopify.com domain, got: #{inspect(domain)}"
+    end
+  end
 end
