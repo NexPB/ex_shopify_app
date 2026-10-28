@@ -1,0 +1,25 @@
+lib/ex_shopify_app/plugs/token.ex
+  s_e7b3b5030f06a0::t_4999389d7f32e7 8
+CHANGELOG.md
+  s_e7b3b5030f06a0::t_8b54c12ac051fe 19-20
+lib/ex_shopify_app/plugs/extension_token.ex
+  s_e7b3b5030f06a0::t_4999389d7f32e7 20
+lib/ex_shopify_app/plugs/verify_session_token.ex
+  s_e7b3b5030f06a0::t_4999389d7f32e7 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c59f6cee6ee445e118bf9e2cf11c2b41ef2d2e40",
+  "prompts": {},
+  "sessions": {
+    "s_e7b3b5030f06a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32905ef0-1cbc-445d-b131-9645ac3f4bb8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
