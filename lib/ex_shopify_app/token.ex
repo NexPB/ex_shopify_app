@@ -26,6 +26,24 @@ defmodule ExShopifyApp.Token do
   end
 
   @doc """
+  Decodes and verifies a token like `decode_and_verify/3`, trying each of
+  `ExShopifyApp.verifying_secrets/0` in turn.
+
+  Returns the error for the last secret when none of them verifies the token.
+  """
+  @spec verify(Guardian.Token.token(), Guardian.Token.claims(), Guardian.options()) ::
+          {:ok, Guardian.Token.claims()} | {:error, any()}
+  def verify(token, claims_to_check \\ %{}, opts \\ []) do
+    Enum.reduce_while(ExShopifyApp.verifying_secrets(), nil, fn secret, _error ->
+      case decode_and_verify(token, claims_to_check, Keyword.put(opts, :secret, secret)) do
+        # Guardian reports a signature made with another secret as :invalid_token.
+        {:error, :invalid_token} = error -> {:cont, error}
+        result -> {:halt, result}
+      end
+    end)
+  end
+
+  @doc """
   Checks the Shopify session token claims that Guardian does not check.
 
   Returns `{:error, :invalid_audience}` when `aud` is not `ExShopifyApp.api_key/0`,
