@@ -54,11 +54,8 @@ defmodule ExShopifyApp.Plugs.AssignShop do
           end
 
         :app_proxy ->
-          # The Hmac plug signs the raw query, so read `shop` from it rather than from
-          # `query_params`, which keeps only the last of a repeated key.
           with :app_proxy <- conn.private[:ex_shopify_app_hmac],
-               [shopify_domain] <-
-                 for({"shop", value} <- URI.query_decoder(conn.query_string), do: value) do
+               [shopify_domain] <- query_values(conn, "shop") do
             shopify_domain
           else
             _ -> nil
@@ -85,5 +82,14 @@ defmodule ExShopifyApp.Plugs.AssignShop do
       |> Conn.send_resp(401, "Unauthorized")
       |> Conn.halt()
     end
+  end
+
+  # The Hmac plug signs the raw query, so read it rather than `query_params`, which
+  # keeps only the last value of a repeated key.
+  defp query_values(%Conn{} = conn, key) do
+    conn.query_string
+    |> URI.query_decoder()
+    |> Enum.filter(&(elem(&1, 0) == key))
+    |> Enum.map(&elem(&1, 1))
   end
 end
