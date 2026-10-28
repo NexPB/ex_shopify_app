@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-rc.1]
+
+### Added
+
+- `config :ex_shopify_app, old_api_secret: secret` or `SHOPIFY_OLD_API_SECRET` sets the
+  client secret you rotate away from. `ExShopifyApp.Plugs.Hmac`, `ExShopifyApp.Plugs.Token`
+  and `ExShopifyApp.Token.verify/3` accept a signature from it or from `:api_secret`.
+  Token exchange and refresh send only `:api_secret`.
+- `ExShopifyApp.verifying_secrets/0` returns the secrets that verify an inbound signature.
+- `ExShopifyApp.Token.verify/3` verifies a session token against each of
+  `ExShopifyApp.verifying_secrets/0`. `decode_and_verify/3` uses only `:api_secret`.
+- `ExShopifyApp.Plugs.VerifyHeader`, which `ExShopifyApp.Plugs.Token` now uses in place
+  of `Guardian.Plug.VerifyHeader`.
+- `ExShopifyApp.Plugs.ExtensionToken` authenticates checkout and customer account UI
+  extension session tokens. These tokens have no `iss`, and `dest` is the bare
+  `{shop}.myshopify.com` hostname. `aud`, `dest`, `exp` and `nbf` are required.
+- `ExShopifyApp.Plugs.AssignShop` with `type: :app_proxy` reads the `shop` query
+  parameter of a request that `ExShopifyApp.Plugs.Hmac` verified with
+  `scheme: :app_proxy`.
+- `ExShopifyApp.Plugs.AssignShop` with `type: :flow_action` reads the `shopify_domain`
+  body parameter of a Shopify Flow action that `ExShopifyApp.Plugs.Hmac` verified with
+  `scheme: :webhook`. Flow actions send no `x-shopify-shop-domain` header.
+
 ## [2.0.0-rc.0]
 
 ### Changed
