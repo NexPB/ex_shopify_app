@@ -1,0 +1,19 @@
+UPGRADE.md
+  s_3d300b500bd22e::t_f2e876d7cad340 137-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "17031135b7f4092308e1298eee421fb6b42ee325",
+  "prompts": {},
+  "sessions": {
+    "s_3d300b500bd22e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b511188-8674-4061-adad-265ab9ee34d5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
