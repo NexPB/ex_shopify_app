@@ -7,9 +7,16 @@ defmodule ExShopifyApp.Plugs.AssignShop do
   ## Options
 
   - `:get_shop_by_domain` - A function that fetches the Shop resource by domain.
-  - `:type` - Can be `:token` or `:header`. Defaults to `:token`. `:header` reads
-    `x-shopify-shop-domain` and requires `ExShopifyApp.Plugs.Hmac` with
-    `scheme: :webhook` earlier in the pipeline.
+  - `:type` - Where to read the shop domain. Defaults to `:token`.
+    - `:token` - the session token verified by `ExShopifyApp.Plugs.AdminAuth` or
+      `ExShopifyApp.Plugs.ExtensionAuth`.
+    - `:header` - the `x-shopify-shop-domain` header. Requires `ExShopifyApp.Plugs.Hmac`
+      with `scheme: :webhook` earlier in the pipeline.
+    - `:app_proxy` - the `shop` query parameter. Requires `ExShopifyApp.Plugs.Hmac` with
+      `scheme: :app_proxy` earlier in the pipeline.
+    - `:flow_action` - the `shopify_domain` body parameter of a Shopify Flow action.
+      Requires `Plug.Parsers` and `ExShopifyApp.Plugs.Hmac` with `scheme: :webhook`
+      earlier in the pipeline.
 
   ## Example
 
@@ -45,6 +52,22 @@ defmodule ExShopifyApp.Plugs.AssignShop do
           else
             _ -> nil
           end
+
+        :app_proxy ->
+          with :app_proxy <- conn.private[:ex_shopify_app_hmac],
+               {:ok, shopify_domain} <- fetch_query_param(conn, "shop") do
+            shopify_domain
+          else
+            _ -> nil
+          end
+
+        :flow_action ->
+          with :webhook <- conn.private[:ex_shopify_app_hmac],
+               %{"shopify_domain" => shopify_domain} <- conn.body_params do
+            shopify_domain
+          else
+            _ -> nil
+          end
       end
 
     if Shop.valid_domain?(shopify_domain) do
@@ -58,6 +81,18 @@ defmodule ExShopifyApp.Plugs.AssignShop do
       |> Conn.put_status(:unauthorized)
       |> Conn.send_resp(401, "Unauthorized")
       |> Conn.halt()
+    end
+  end
+
+  # The Hmac plug signs the raw query, so read it rather than `query_params`, which
+  # keeps only the last value of a repeated key. A repeated key returns `:error`.
+  defp fetch_query_param(%Conn{} = conn, key) do
+    conn.query_string
+    |> URI.query_decoder()
+    |> Enum.filter(&(elem(&1, 0) == key))
+    |> case do
+      [{^key, value}] -> {:ok, value}
+      _ -> :error
     end
   end
 end

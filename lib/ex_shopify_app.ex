@@ -15,6 +15,23 @@ defmodule ExShopifyApp do
       raise "Missing config or environment variable: :api_secret"
   end
 
+  @doc """
+  Returns the secrets that verify an inbound signature: `api_secret/0`, then the
+  `:old_api_secret` config or `SHOPIFY_OLD_API_SECRET` when set.
+
+  Set the old secret while you rotate the app's client secret, so requests signed with
+  either secret pass. Outbound requests send only `api_secret/0`.
+  """
+  @spec verifying_secrets() :: [String.t(), ...]
+  def verifying_secrets() do
+    old =
+      Application.get_env(:ex_shopify_app, :old_api_secret) ||
+        System.get_env("SHOPIFY_OLD_API_SECRET")
+
+    # An empty key would accept a signature that anyone can compute.
+    if is_binary(old) and old != "", do: [api_secret(), old], else: [api_secret()]
+  end
+
   @spec api_version() :: String.t()
   def api_version() do
     Application.get_env(:ex_shopify_app, :api_version, "2026-01")

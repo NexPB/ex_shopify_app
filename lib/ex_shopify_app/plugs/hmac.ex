@@ -2,8 +2,9 @@ defmodule ExShopifyApp.Plugs.Hmac do
   @moduledoc """
   A plug to verify that Shopify signed a request.
 
-  Responds `401` and halts when the signature is missing or invalid. On success it
-  stores the verified scheme in `conn.private[:ex_shopify_app_hmac]`.
+  Responds `401` and halts when the signature is missing or matches none of
+  `ExShopifyApp.verifying_secrets/0`. On success it stores the verified scheme in
+  `conn.private[:ex_shopify_app_hmac]`.
 
   ## Options
 
@@ -21,7 +22,7 @@ defmodule ExShopifyApp.Plugs.Hmac do
   """
   alias Plug.Conn
 
-  import ExShopifyApp, only: [api_secret: 0]
+  import ExShopifyApp, only: [verifying_secrets: 0]
 
   @schemes [:webhook, :app_proxy]
 
@@ -54,11 +55,8 @@ defmodule ExShopifyApp.Plugs.Hmac do
   defp verified?(%Conn{} = conn, :webhook, _opts) do
     case Conn.get_req_header(conn, "x-shopify-hmac-sha256") do
       [signature] ->
-        conn.assigns
-        |> Map.fetch!(:raw_body)
-        |> hmac()
-        |> Base.encode64()
-        |> Plug.Crypto.secure_compare(signature)
+        body = Map.fetch!(conn.assigns, :raw_body)
+        signed?(body, signature, &Base.encode64/1)
 
       _ ->
         false
@@ -79,9 +77,7 @@ defmodule ExShopifyApp.Plugs.Hmac do
       |> Enum.map(fn {key, values} -> "#{key}=#{Enum.join(values, ",")}" end)
       |> Enum.sort()
       |> Enum.join()
-      |> hmac()
-      |> Base.encode16(case: :lower)
-      |> Plug.Crypto.secure_compare(signature)
+      |> signed?(signature, &Base.encode16(&1, case: :lower))
     else
       _ -> false
     end
@@ -96,8 +92,13 @@ defmodule ExShopifyApp.Plugs.Hmac do
 
   defp fresh?(_params, _max_age), do: false
 
-  @spec hmac(iodata()) :: binary()
-  defp hmac(content) do
-    :crypto.mac(:hmac, :sha256, api_secret(), content)
+  @spec signed?(iodata(), String.t(), (binary() -> String.t())) :: boolean()
+  defp signed?(content, signature, encode) do
+    Enum.any?(verifying_secrets(), fn secret ->
+      :hmac
+      |> :crypto.mac(:sha256, secret, content)
+      |> encode.()
+      |> Plug.Crypto.secure_compare(signature)
+    end)
   end
 end

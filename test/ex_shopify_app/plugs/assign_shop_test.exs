@@ -53,6 +53,74 @@ defmodule ExShopifyApp.Plugs.AssignShopTest do
     end
   end
 
+  describe "type: :app_proxy" do
+    test "assigns the shop of a verified app proxy request" do
+      conn =
+        :get
+        |> conn("/proxy?shop=acme.myshopify.com&timestamp=1")
+        |> Conn.put_private(:ex_shopify_app_hmac, :app_proxy)
+        |> run(type: :app_proxy)
+
+      refute conn.halted
+      assert conn.assigns.shopify_domain == "acme.myshopify.com"
+    end
+
+    test "rejects a webhook" do
+      conn =
+        :get
+        |> conn("/proxy?shop=acme.myshopify.com")
+        |> Conn.put_private(:ex_shopify_app_hmac, :webhook)
+        |> run(type: :app_proxy)
+
+      assert_unauthorized(conn)
+    end
+
+    test "rejects a repeated shop parameter" do
+      conn =
+        :get
+        |> conn("/proxy?shop=acme.myshopify.com&shop=other.myshopify.com")
+        |> Conn.put_private(:ex_shopify_app_hmac, :app_proxy)
+        |> run(type: :app_proxy)
+
+      assert_unauthorized(conn)
+    end
+  end
+
+  describe "type: :flow_action" do
+    test "assigns the shop of a verified Flow action" do
+      conn =
+        :post
+        |> conn("/flow", %{"shopify_domain" => "acme.myshopify.com", "handle" => "notify"})
+        |> Conn.put_private(:ex_shopify_app_hmac, :webhook)
+        |> run(type: :flow_action)
+
+      refute conn.halted
+      assert conn.assigns.shopify_domain == "acme.myshopify.com"
+    end
+
+    test "rejects a request the Hmac plug did not verify as a webhook" do
+      for scheme <- [nil, :app_proxy] do
+        conn =
+          :post
+          |> conn("/flow", %{"shopify_domain" => "acme.myshopify.com"})
+          |> Conn.put_private(:ex_shopify_app_hmac, scheme)
+          |> run(type: :flow_action)
+
+        assert_unauthorized(conn)
+      end
+    end
+
+    test "rejects a body without shopify_domain" do
+      conn =
+        :post
+        |> conn("/flow", %{"shop_id" => 1})
+        |> Conn.put_private(:ex_shopify_app_hmac, :webhook)
+        |> run(type: :flow_action)
+
+      assert_unauthorized(conn)
+    end
+  end
+
   describe "type: :token" do
     test "assigns the shop of the session token" do
       conn =
