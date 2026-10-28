@@ -1,0 +1,21 @@
+lib/ex_shopify_app/storefront.ex
+  s_4a9060542383b8::t_82b5b3a23c52c8 1-96
+test/ex_shopify_app/storefront_test.exs
+  s_4a9060542383b8::t_dd0071ff854a81 1-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "24cf58c76a1ad991c6513fdedf1f5f580cf89113",
+  "prompts": {},
+  "sessions": {
+    "s_4a9060542383b8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dcc8fcba-41d3-45ab-9dbe-cba85a36f9b8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Harry Lording <helording@gmail.com>"
+    }
+  }
+}
