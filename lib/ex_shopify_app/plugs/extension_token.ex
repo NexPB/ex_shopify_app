@@ -17,7 +17,7 @@ defmodule ExShopifyApp.Plugs.ExtensionToken do
     module: ExShopifyApp.Token,
     error_handler: ExShopifyApp.Plugs.Token.ErrorHandler
 
-  plug ExShopifyApp.Plugs.VerifyHeader, extension: true
+  plug ExShopifyApp.Plugs.VerifySessionToken, extension: true
   plug Guardian.Plug.EnsureAuthenticated
   plug Guardian.Plug.LoadResource
 end

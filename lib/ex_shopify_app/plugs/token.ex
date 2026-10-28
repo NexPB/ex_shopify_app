@@ -5,7 +5,7 @@ defmodule ExShopifyApp.Plugs.Token do
     error_handler: __MODULE__.ErrorHandler
 
   plug :set_header_from_params
-  plug ExShopifyApp.Plugs.VerifyHeader
+  plug ExShopifyApp.Plugs.VerifySessionToken
   plug Guardian.Plug.EnsureAuthenticated
   plug Guardian.Plug.LoadResource
 

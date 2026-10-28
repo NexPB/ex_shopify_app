@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExShopifyApp.verifying_secrets/0` returns the secrets that verify an inbound signature.
 - `ExShopifyApp.Token.verify/3` verifies a session token against each of
   `ExShopifyApp.verifying_secrets/0`. `decode_and_verify/3` uses only `:api_secret`.
-- `ExShopifyApp.Plugs.VerifyHeader`, which `ExShopifyApp.Plugs.Token` now uses in place
-  of `Guardian.Plug.VerifyHeader`.
+- `ExShopifyApp.Plugs.VerifySessionToken`, which `ExShopifyApp.Plugs.Token` now uses
+  in place of `Guardian.Plug.VerifyHeader`.
 - `ExShopifyApp.Plugs.ExtensionToken` authenticates checkout and customer account UI
   extension session tokens. These tokens have no `iss`, and `dest` is the bare
   `{shop}.myshopify.com` hostname. `aud`, `dest`, `exp` and `nbf` are required.

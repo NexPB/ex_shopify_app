@@ -1,4 +1,4 @@
-defmodule ExShopifyApp.Plugs.VerifyHeader do
+defmodule ExShopifyApp.Plugs.VerifySessionToken do
   @moduledoc """
   Verifies the `authorization: Bearer` session token with `ExShopifyApp.Token.verify/3`.
 
