@@ -24,4 +24,40 @@ defmodule ExShopifyApp.Token do
   def resource_from_claims(_claims) do
     {:error, :missing_shopify_domain}
   end
+
+  @doc """
+  Checks the Shopify session token claims that Guardian does not check.
+
+  Returns `{:error, :invalid_audience}` when `aud` is not `ExShopifyApp.api_key/0`,
+  `{:error, :invalid_issuer}` when the `iss` and `dest` hostnames differ, and
+  `{:error, :missing_exp}` or `{:error, :missing_nbf}` when the claim is absent.
+  """
+  def verify_claims(claims, _options) do
+    with :ok <- verify_audience(claims),
+         :ok <- verify_issuer_matches_dest(claims),
+         :ok <- verify_present(claims, "exp", :missing_exp),
+         :ok <- verify_present(claims, "nbf", :missing_nbf) do
+      {:ok, claims}
+    end
+  end
+
+  defp verify_audience(claims) do
+    if claims["aud"] == ExShopifyApp.api_key(), do: :ok, else: {:error, :invalid_audience}
+  end
+
+  defp verify_issuer_matches_dest(%{"iss" => iss, "dest" => dest})
+       when is_binary(iss) and is_binary(dest) do
+    case {URI.parse(iss), URI.parse(dest)} do
+      {%URI{host: host}, %URI{host: host}} when is_binary(host) and host != "" -> :ok
+      _ -> {:error, :invalid_issuer}
+    end
+  end
+
+  defp verify_issuer_matches_dest(_claims), do: {:error, :invalid_issuer}
+
+  # Guardian verifies `exp` and `nbf` before this callback runs, but accepts a token
+  # that omits them.
+  defp verify_present(claims, key, error) do
+    if is_number(claims[key]), do: :ok, else: {:error, error}
+  end
 end

@@ -14,6 +14,11 @@ defmodule ExShopifyApp.AccessToken.Token do
   the struct and shows `**redacted**` for them in a changeset's changes, so token values
   never leak into logs or error reports.
 
+  `:access_token` and `:refresh_token` use the Ecto type set with
+  `config :ex_shopify_app, #{inspect(__MODULE__)}, token_type: type`, `:string` by
+  default. Set an encrypted type, such as a `Cloak.Ecto.Binary` type, to encrypt them
+  at rest. See `ExShopifyApp.AccessToken.TokenType`.
+
   Docs: <https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/offline-access-tokens>
   """
 
@@ -40,8 +45,8 @@ defmodule ExShopifyApp.AccessToken.Token do
 
   @primary_key {:shopify_domain, :string, autogenerate: false}
   schema "shopify_access_tokens" do
-    field :access_token, :string, redact: true
-    field :refresh_token, :string, redact: true
+    field :access_token, ExShopifyApp.AccessToken.TokenType, redact: true
+    field :refresh_token, ExShopifyApp.AccessToken.TokenType, redact: true
     field :scope, :string
 
     field :expires_in, :integer

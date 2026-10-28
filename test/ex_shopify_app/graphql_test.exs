@@ -68,6 +68,13 @@ defmodule ExShopifyApp.GraphqlTest do
                |> Graphql.query("query { __typename }")
     end
 
+    test "filters the access token from the :debug logger" do
+      assert [{Tesla.Middleware.Logger, opts} | _] =
+               @shop |> Graphql.client(debug: true) |> Tesla.Client.middleware()
+
+      assert "x-shopify-access-token" in opts[:filter_headers]
+    end
+
     test "raises without sending the access token to a host other than {shop}.myshopify.com" do
       assert_raise ArgumentError, fn ->
         Graphql.client(%{@shop | shopify_domain: "evil.example#.myshopify.com"})

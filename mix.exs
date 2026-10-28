@@ -30,12 +30,12 @@ defmodule ExShopifyApp.MixProject do
   defp deps do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:plug, "~> 1.4"},
-      {:guardian, "~> 2.4"},
-      {:tesla, "~> 1.11"},
+      {:plug, ">= 1.19.3 and < 2.0.0"},
+      {:guardian, ">= 2.5.0 and < 3.0.0"},
+      {:tesla, ">= 1.18.3 and < 2.0.0"},
       {:telemetry, "~> 1.0"},
       {:ecto, "~> 3.0"},
-      {:mint, "~> 1.0", optional: true},
+      {:mint, ">= 1.9.0 and < 2.0.0", optional: true},
       # Optional: only needed for ExShopifyApp.AccessToken.Migrations — any host
       # running the bundled migration already has an Ecto SQL repo.
       {:ecto_sql, "~> 3.0", optional: true},
