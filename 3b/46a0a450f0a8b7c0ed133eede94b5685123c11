@@ -1,0 +1,21 @@
+README.md
+  s_17c534951392a7::t_ff78760e88c69f 171-172
+docs/STOREFRONT.md
+  s_17c534951392a7::t_e52b332c3ddeb3 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3b46a0a450f0a8b7c0ed133eede94b5685123c11",
+  "prompts": {},
+  "sessions": {
+    "s_17c534951392a7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "61786432-0506-4ecb-80cd-47579d595661",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
