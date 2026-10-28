@@ -75,14 +75,14 @@ defmodule ExShopifyApp.KeyRotationTest do
     end
   end
 
-  describe "ExShopifyApp.Plugs.Token" do
+  describe "ExShopifyApp.Plugs.AdminAuth" do
     test "authenticates a session token signed with the old secret" do
       conn =
         :get
         |> conn("/")
         |> Conn.put_req_header("authorization", "Bearer " <> sign(claims(), @old_secret))
         |> Conn.fetch_query_params()
-        |> ExShopifyApp.Plugs.Token.call(ExShopifyApp.Plugs.Token.init([]))
+        |> ExShopifyApp.Plugs.AdminAuth.call(ExShopifyApp.Plugs.AdminAuth.init([]))
 
       refute conn.halted
       assert ExShopifyApp.Token.Plug.current_resource(conn) == "shop.myshopify.com"

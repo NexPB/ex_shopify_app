@@ -1,9 +1,9 @@
-defmodule ExShopifyApp.Plugs.ExtensionTokenTest do
+defmodule ExShopifyApp.Plugs.ExtensionAuthTest do
   use ExUnit.Case, async: true
 
   import Plug.Test
 
-  alias ExShopifyApp.Plugs.ExtensionToken
+  alias ExShopifyApp.Plugs.ExtensionAuth
   alias Plug.Conn
 
   # The claims of a checkout or customer account UI extension session token.
@@ -37,7 +37,7 @@ defmodule ExShopifyApp.Plugs.ExtensionTokenTest do
     :post
     |> conn("/extension")
     |> Conn.put_req_header("authorization", scheme <> " " <> sign(claims))
-    |> ExtensionToken.call(ExtensionToken.init([]))
+    |> ExtensionAuth.call(ExtensionAuth.init([]))
   end
 
   test "authenticates an extension session token" do
@@ -72,11 +72,11 @@ defmodule ExShopifyApp.Plugs.ExtensionTokenTest do
 
     conn = %{conn | req_headers: [{"authorization", header}, {"authorization", header}]}
 
-    assert ExtensionToken.call(conn, ExtensionToken.init([])).status == 401
+    assert ExtensionAuth.call(conn, ExtensionAuth.init([])).status == 401
   end
 
   test "rejects a request without a token" do
-    conn = :post |> conn("/extension") |> ExtensionToken.call(ExtensionToken.init([]))
+    conn = :post |> conn("/extension") |> ExtensionAuth.call(ExtensionAuth.init([]))
 
     assert conn.halted
     assert conn.status == 401

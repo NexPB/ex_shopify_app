@@ -1,8 +1,21 @@
-defmodule ExShopifyApp.Plugs.Token do
+defmodule ExShopifyApp.Plugs.AdminAuth do
+  @moduledoc """
+  A Guardian pipeline that authenticates an App Home or admin UI extension session
+  token, sent as `authorization: Bearer <token>` or as the `id_token` parameter.
+
+  Requires `aud`, `iss`, `dest`, `exp` and `nbf`, with matching `iss` and `dest`
+  hostnames. Responds `401` and halts otherwise.
+
+  ## Example
+
+      plug ExShopifyApp.Plugs.AdminAuth
+      plug ExShopifyApp.Plugs.AssignShop, get_shop_by_domain: &MyApp.Shops.get_by_domain/1
+
+  """
   use Guardian.Plug.Pipeline,
     otp_app: :ex_shopify_app,
     module: ExShopifyApp.Token,
-    error_handler: __MODULE__.ErrorHandler
+    error_handler: ExShopifyApp.Plugs.AuthErrorHandler
 
   plug :set_header_from_params
   plug ExShopifyApp.Plugs.VerifySessionToken
@@ -20,17 +33,6 @@ defmodule ExShopifyApp.Plugs.Token do
 
       true ->
         conn
-    end
-  end
-
-  defmodule ErrorHandler do
-    @behaviour Guardian.Plug.ErrorHandler
-
-    @impl Guardian.Plug.ErrorHandler
-    def auth_error(conn, {type, _reason}, _opts) do
-      conn
-      |> send_resp(:unauthorized, to_string(type))
-      |> halt()
     end
   end
 end

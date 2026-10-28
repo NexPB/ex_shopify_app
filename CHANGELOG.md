@@ -7,18 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0-rc.1]
 
+### Changed
+
+- **Breaking:** `ExShopifyApp.Plugs.Token` is now `ExShopifyApp.Plugs.AdminAuth`, and
+  `ExShopifyApp.Plugs.Token.ErrorHandler` is now `ExShopifyApp.Plugs.AuthErrorHandler`.
+
 ### Added
 
 - `config :ex_shopify_app, old_api_secret: secret` or `SHOPIFY_OLD_API_SECRET` sets the
-  client secret you rotate away from. `ExShopifyApp.Plugs.Hmac`, `ExShopifyApp.Plugs.Token`
-  and `ExShopifyApp.Token.verify/3` accept a signature from it or from `:api_secret`.
+  client secret you rotate away from. `ExShopifyApp.Plugs.Hmac`,
+  `ExShopifyApp.Plugs.AdminAuth`, `ExShopifyApp.Plugs.ExtensionAuth` and
+  `ExShopifyApp.Token.verify/3` accept a signature from it or from `:api_secret`.
   Token exchange and refresh send only `:api_secret`.
 - `ExShopifyApp.verifying_secrets/0` returns the secrets that verify an inbound signature.
 - `ExShopifyApp.Token.verify/3` verifies a session token against each of
   `ExShopifyApp.verifying_secrets/0`. `decode_and_verify/3` uses only `:api_secret`.
-- `ExShopifyApp.Plugs.VerifySessionToken`, which `ExShopifyApp.Plugs.Token` now uses
-  in place of `Guardian.Plug.VerifyHeader`.
-- `ExShopifyApp.Plugs.ExtensionToken` authenticates checkout and customer account UI
+- `ExShopifyApp.Plugs.VerifySessionToken`, which `ExShopifyApp.Plugs.AdminAuth` uses in
+  place of `Guardian.Plug.VerifyHeader`.
+- `ExShopifyApp.Plugs.ExtensionAuth` authenticates checkout and customer account UI
   extension session tokens. These tokens have no `iss`, and `dest` is the bare
   `{shop}.myshopify.com` hostname. `aud`, `dest`, `exp` and `nbf` are required.
 - `ExShopifyApp.Plugs.AssignShop` with `type: :app_proxy` reads the `shop` query

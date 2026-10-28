@@ -10,6 +10,20 @@ that has an older version:
 mix deps.update plug guardian tesla mint
 ```
 
+## `ExShopifyApp.Plugs.Token` is now `ExShopifyApp.Plugs.AdminAuth`
+
+```elixir
+# 1.x
+plug ExShopifyApp.Plugs.Token
+
+# 2.0
+plug ExShopifyApp.Plugs.AdminAuth
+```
+
+`ExShopifyApp.Plugs.Token.ErrorHandler` is now `ExShopifyApp.Plugs.AuthErrorHandler`.
+Move any `config :ex_shopify_app, ExShopifyApp.Plugs.Token` to
+`config :ex_shopify_app, ExShopifyApp.Plugs.AdminAuth`.
+
 ## `ExShopifyApp.Plugs.Hmac` requires `:scheme`
 
 Each route now accepts one signature. `init/1` raises `ArgumentError` without a
@@ -75,10 +89,10 @@ Set `:api_key` or `SHOPIFY_API_KEY` to the app's client ID, the value Shopify pu
 These tokens are now rejected:
 
 - Session tokens from checkout and customer account UI extensions, which have no `iss`.
-  Authenticate them with `ExShopifyApp.Plugs.ExtensionToken` on a separate route:
+  Authenticate them with `ExShopifyApp.Plugs.ExtensionAuth` on a separate route:
 
   ```elixir
-  plug ExShopifyApp.Plugs.ExtensionToken
+  plug ExShopifyApp.Plugs.ExtensionAuth
   plug ExShopifyApp.Plugs.AssignShop, get_shop_by_domain: &MyApp.Shops.get_by_domain/1
   ```
 
@@ -86,8 +100,8 @@ These tokens are now rejected:
 
 ## Rotate the client secret with `:old_api_secret`
 
-`ExShopifyApp.Plugs.Hmac`, `ExShopifyApp.Plugs.Token` and
-`ExShopifyApp.Plugs.ExtensionToken` accept a signature from `:api_secret` or
+`ExShopifyApp.Plugs.Hmac`, `ExShopifyApp.Plugs.AdminAuth` and
+`ExShopifyApp.Plugs.ExtensionAuth` accept a signature from `:api_secret` or
 `:old_api_secret`. To rotate the client secret, set `:api_secret` (or
 `SHOPIFY_API_SECRET`) to the new secret and `:old_api_secret` (or
 `SHOPIFY_OLD_API_SECRET`) to the old one. Remove `:old_api_secret` when Shopify signs

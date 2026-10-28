@@ -8,8 +8,8 @@ defmodule ExShopifyApp.Plugs.AssignShop do
 
   - `:get_shop_by_domain` - A function that fetches the Shop resource by domain.
   - `:type` - Where to read the shop domain. Defaults to `:token`.
-    - `:token` - the session token verified by `ExShopifyApp.Plugs.Token` or
-      `ExShopifyApp.Plugs.ExtensionToken`.
+    - `:token` - the session token verified by `ExShopifyApp.Plugs.AdminAuth` or
+      `ExShopifyApp.Plugs.ExtensionAuth`.
     - `:header` - the `x-shopify-shop-domain` header. Requires `ExShopifyApp.Plugs.Hmac`
       with `scheme: :webhook` earlier in the pipeline.
     - `:app_proxy` - the `shop` query parameter. Requires `ExShopifyApp.Plugs.Hmac` with
