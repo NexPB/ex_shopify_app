@@ -75,6 +75,12 @@ defmodule ExShopifyApp.Plugs.AssignShopTest do
       assert_unauthorized(conn)
     end
 
+    test "rejects a request Hmac did not verify" do
+      conn = :get |> conn("/proxy?shop=acme.myshopify.com") |> run(type: :app_proxy)
+
+      assert_unauthorized(conn)
+    end
+
     test "rejects a repeated shop parameter" do
       conn =
         :get

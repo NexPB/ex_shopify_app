@@ -12,6 +12,7 @@ defmodule ExShopifyApp.Plugs.Hmac do
       * `:webhook` - the `x-shopify-hmac-sha256` header over the raw body, which
         `ExShopifyApp.Web.CacheBodyReader` must cache.
       * `:app_proxy` - the `signature` query parameter over the other query parameters.
+        Read a verified parameter with `fetch_signed_param/2`.
     * `:max_age` - for `:app_proxy`, the maximum difference in seconds between the
       `timestamp` query parameter and now. Defaults to `300`.
 
@@ -66,6 +67,67 @@ defmodule ExShopifyApp.Plugs.Hmac do
         |> Conn.put_status(:unauthorized)
         |> Conn.send_resp(401, "Unauthorized")
         |> Conn.halt()
+    end
+  end
+
+  @doc """
+  Returns the scheme this plug verified the request with, or `nil` if it did not.
+
+  ## Example
+
+      iex> ExShopifyApp.Plugs.Hmac.verified_scheme(Plug.Test.conn(:get, "/proxy"))
+      nil
+
+  """
+  @spec verified_scheme(Conn.t()) :: :webhook | :app_proxy | nil
+  def verified_scheme(%Conn{} = conn), do: conn.private[:ex_shopify_app_hmac]
+
+  @doc """
+  Fetches a query parameter of a request this plug verified with `scheme: :app_proxy`.
+
+  Returns `:error` when `key` is missing or repeated. Shopify sends
+  `logged_in_customer_id` with an empty value when no customer is logged in.
+
+  A client that reads the signed query string can change the values this function
+  returns, so never send that query string back in a response, a redirect or a log
+  the client can read.
+
+  Raises `ArgumentError` when this plug did not verify the request with
+  `scheme: :app_proxy`, or when `key` is `"signature"`. A plug that also runs on
+  other routes checks `verified_scheme/1` first.
+
+  ## Example
+
+      plug ExShopifyApp.Plugs.Hmac, scheme: :app_proxy
+
+      case Hmac.fetch_signed_param(conn, "logged_in_customer_id") do
+        {:ok, id} when id != "" -> assign(conn, :customer_id, id)
+        _ -> conn
+      end
+
+  """
+  @spec fetch_signed_param(Conn.t(), String.t()) :: {:ok, String.t()} | :error
+  def fetch_signed_param(%Conn{}, "signature") do
+    raise ArgumentError, ~s(the app proxy signature does not sign the "signature" parameter)
+  end
+
+  def fetch_signed_param(%Conn{} = conn, key) when is_binary(key) do
+    case verified_scheme(conn) do
+      :app_proxy ->
+        # Not `conn.params`: a body or path param overrides a query param there. Shopify
+        # signs `a=1&a=2` as `a=1,2`, so neither value of a repeated key is signed alone.
+        conn.query_string
+        |> URI.query_decoder()
+        |> Enum.filter(&(elem(&1, 0) == key))
+        |> case do
+          [{^key, value}] -> {:ok, value}
+          _ -> :error
+        end
+
+      scheme ->
+        raise ArgumentError,
+              "fetch_signed_param/2 requires a request that ExShopifyApp.Plugs.Hmac " <>
+                "verified with scheme: :app_proxy, got scheme: #{inspect(scheme)}"
     end
   end
 

@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0]
+
+### Added
+
+- `ExShopifyApp.Plugs.Hmac.fetch_signed_param/2` returns a query parameter of a request
+  that `ExShopifyApp.Plugs.Hmac` verified with `scheme: :app_proxy`, for example
+  `logged_in_customer_id`. It returns `:error` for a missing or repeated key. It raises
+  `ArgumentError` for a request that `Hmac` did not verify with `scheme: :app_proxy`,
+  and for the `"signature"` key.
+- `ExShopifyApp.Plugs.Hmac.verified_scheme/1` returns the scheme that
+  `ExShopifyApp.Plugs.Hmac` verified the request with, or `nil`.
+
 ## [2.0.1]
 
 ### Fixed
@@ -217,7 +229,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/2.0.1...HEAD
+[Unreleased]: https://github.com/NexPB/ex_shopify_app/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/NexPB/ex_shopify_app/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/NexPB/ex_shopify_app/compare/2.0.0...2.0.1
 [1.5.0]: https://github.com/NexPB/ex_shopify_app/compare/1.4.3...1.5.0
 [1.4.3]: https://github.com/NexPB/ex_shopify_app/compare/1.4.2...1.4.3
