@@ -145,6 +145,50 @@ defmodule ExShopifyApp.Plugs.HmacTest do
     end
   end
 
+  describe "fetch_signed_param/2" do
+    setup do
+      conn = :get |> conn("/proxy?" <> app_proxy_query(now())) |> run(scheme: :app_proxy)
+
+      %{conn: conn}
+    end
+
+    test "returns a decoded parameter of a verified app proxy request", %{conn: conn} do
+      assert Hmac.fetch_signed_param(conn, "shop") == {:ok, "acme.myshopify.com"}
+      assert Hmac.fetch_signed_param(conn, "path_prefix") == {:ok, "/apps/awesome_reviews"}
+      assert Hmac.fetch_signed_param(conn, "logged_in_customer_id") == {:ok, ""}
+    end
+
+    test "returns :error for a repeated, missing or signature key", %{conn: conn} do
+      assert Hmac.fetch_signed_param(conn, "extra") == :error
+      assert Hmac.fetch_signed_param(conn, "missing") == :error
+      assert Hmac.fetch_signed_param(conn, "signature") == :error
+    end
+
+    test "ignores a body parameter with the same key" do
+      conn =
+        :post
+        |> conn("/proxy?" <> app_proxy_query(now()), %{"shop" => "other.myshopify.com"})
+        |> run(scheme: :app_proxy)
+
+      assert conn.params["shop"] == "other.myshopify.com"
+      assert Hmac.fetch_signed_param(conn, "shop") == {:ok, "acme.myshopify.com"}
+    end
+
+    test "returns :error unless the request was verified with scheme: :app_proxy" do
+      unverified = conn(:get, "/proxy?shop=acme.myshopify.com")
+
+      webhook =
+        :post
+        |> webhook_conn(@body, webhook_signature(@body))
+        |> Map.put(:query_string, "shop=acme.myshopify.com")
+        |> run(scheme: :webhook)
+
+      refute webhook.halted
+      assert Hmac.fetch_signed_param(unverified, "shop") == :error
+      assert Hmac.fetch_signed_param(webhook, "shop") == :error
+    end
+  end
+
   # Plug.Parsers fills `params` before this plug in a real pipeline.
   defp run(conn, opts), do: conn |> Conn.fetch_query_params() |> Hmac.call(Hmac.init(opts))
 

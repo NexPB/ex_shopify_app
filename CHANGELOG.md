@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `ExShopifyApp.Plugs.Hmac.fetch_signed_param/2` returns a query parameter of a request
+  that `ExShopifyApp.Plugs.Hmac` verified with `scheme: :app_proxy`, for example
+  `logged_in_customer_id`. It returns `:error` for any other request and for a missing
+  or repeated key.
+
 ## [2.0.1]
 
 ### Fixed
