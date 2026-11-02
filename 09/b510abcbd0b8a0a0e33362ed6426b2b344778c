@@ -1,0 +1,34 @@
+lib/ex_shopify_app/testing.ex
+  s_9d13a4edd564b1::t_1dd6e2081b5568 105
+  s_9d13a4edd564b1::t_3905ab203c7b6e 234-235
+  s_9d13a4edd564b1::t_76c7a3d57100b8 179
+  s_9d13a4edd564b1::t_da6712d98fc9c5 1-104,106-178,180-233,236-245,247-250,252-260,262,275-369
+  s_9d13a4edd564b1::t_eca52a23f47af0 246,251
+  s_9d13a4edd564b1::t_6424767351973d 261,263-274
+test/ex_shopify_app/testing_test.exs
+  s_9d13a4edd564b1::t_6d3d22a75538df 1-20,24-133,135-214
+  s_9d13a4edd564b1::t_88e8083dc672cd 21-23
+  s_9d13a4edd564b1::t_635d8a1e61cc25 134
+test/ex_shopify_app/key_rotation_test.exs
+  s_9d13a4edd564b1::t_5aa04d1c08f745 32-57
+CHANGELOG.md
+  s_9d13a4edd564b1::t_557f2502e14f73 8-20
+README.md
+  s_9d13a4edd564b1::t_fcc345d796bd29 211-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09b510abcbd0b8a0a0e33362ed6426b2b344778c",
+  "prompts": {},
+  "sessions": {
+    "s_9d13a4edd564b1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cc11aa1b-b5e3-4910-a35a-97097a9447db",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
