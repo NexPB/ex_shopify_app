@@ -1,0 +1,24 @@
+mix.exs
+  s_28b39a44458049::t_539cad837d48cc 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0908ed5facae638ab65e6563f799ff1ca2da6d1",
+  "prompts": {},
+  "humans": {
+    "h_963ee31fe77864": {
+      "author": "NexPB <lorenzo@nexp.be>"
+    }
+  },
+  "sessions": {
+    "s_28b39a44458049": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "791fdb17-ddd9-4ffc-bcdb-07437f6e39d7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <lorenzo@nexp.be>"
+    }
+  }
+}
