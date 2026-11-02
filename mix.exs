@@ -1,10 +1,14 @@
 defmodule ExShopifyApp.MixProject do
   use Mix.Project
 
+  @version "2.1.0"
+  @source_url "https://github.com/NexPB/ex_shopify_app"
+
   def project do
     [
       app: :ex_shopify_app,
-      version: "2.1.0",
+      version: @version,
+      source_url: @source_url,
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -52,7 +56,24 @@ defmodule ExShopifyApp.MixProject do
 
   defp docs do
     [
-      extras: ["UPGRADE.md", "docs/TESTING.md"]
+      main: "readme",
+      source_ref: @version,
+      extras: [
+        "README.md",
+        "docs/APP_EVENTS.md",
+        "docs/BILLING.md",
+        "docs/STOREFRONT.md",
+        "docs/TESTING.md",
+        "UPGRADE.md"
+      ],
+      groups_for_extras: [Guides: ~r{docs/}],
+      groups_for_modules: [
+        Plugs: ~r/^ExShopifyApp\.Plugs\./,
+        "Access tokens": ~r/^ExShopifyApp\.AccessToken/,
+        "App Events": ~r/^ExShopifyApp\.AppEvents/,
+        Billing: ~r/^ExShopifyApp\.Billing/,
+        Testing: [ExShopifyApp.Testing]
+      ]
     ]
   end
 
@@ -60,7 +81,7 @@ defmodule ExShopifyApp.MixProject do
     [
       licenses: ["GPL-3.0"],
       links: %{
-        "GitHub" => "https://github.com/NexPB/ex_shopify_app"
+        "GitHub" => @source_url
       }
     ]
   end
