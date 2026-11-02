@@ -232,7 +232,8 @@ defmodule ExShopifyApp.Testing do
   `shop`, `timestamp`, the `params` and a `signature` as Shopify signs it.
 
   `params` is a map or a list of pairs. A list value repeats its key, as Shopify sends
-  `extra=1&extra=2`, and a map value encodes as `key[nested]=value`.
+  `extra=1&extra=2`, and a map value encodes as `key[nested]=value`. Raises
+  `ArgumentError` when `params` has a `shop`, `timestamp` or `signature` key.
 
   ## Options
 
@@ -253,12 +254,19 @@ defmodule ExShopifyApp.Testing do
   """
   @spec app_proxy_query(String.t(), Enumerable.t(), keyword()) :: String.t()
   def app_proxy_query(shopify_domain, params \\ [], opts \\ []) when is_binary(shopify_domain) do
+    params = Enum.to_list(params)
+
+    for {key, _value} <- params, to_string(key) in ~w(shop timestamp signature) do
+      raise ArgumentError,
+            "app_proxy_query/3 sets #{inspect(to_string(key))} itself, remove it from params"
+    end
+
     timestamp = Keyword.get_lazy(opts, :timestamp, fn -> System.system_time(:second) end)
 
     base =
       if timestamp, do: [shop: shopify_domain, timestamp: timestamp], else: [shop: shopify_domain]
 
-    query = URI.encode_query(flatten_params(base ++ Enum.to_list(params), nil))
+    query = URI.encode_query(flatten_params(base ++ params, nil))
     query <> "&" <> URI.encode_query(%{"signature" => app_proxy_signature(query, opts)})
   end
 

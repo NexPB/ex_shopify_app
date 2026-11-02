@@ -159,6 +159,12 @@ defmodule ExShopifyApp.TestingTest do
 
       assert conn.status == 401
     end
+
+    test "raises for a param that it sets itself" do
+      for params <- [[shop: @domain], %{"timestamp" => 1}, [{"signature", "0"}]] do
+        assert_raise ArgumentError, fn -> app_proxy_query(@domain, params) end
+      end
+    end
   end
 
   describe "put_hmac_verified/2" do
