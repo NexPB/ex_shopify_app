@@ -208,6 +208,11 @@ for the full guide; the entry points are `ExShopifyApp.Billing` and
 Query the Storefront API server-side with the shop's offline access token. See
 [docs/STOREFRONT.md](docs/STOREFRONT.md); the entry point is `ExShopifyApp.Storefront`.
 
+## Testing
+
+`ExShopifyApp.Testing` signs session tokens, webhooks and app proxy queries the way
+Shopify does, so your tests can send requests through the real plugs.
+
 ## Docs
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc) and

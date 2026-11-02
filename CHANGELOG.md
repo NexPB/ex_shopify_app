@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `ExShopifyApp.Testing` builds the signed requests and session tokens that Shopify
+  sends, so an app can test its routes through `ExShopifyApp.Plugs.AdminAuth`,
+  `ExShopifyApp.Plugs.ExtensionAuth` and `ExShopifyApp.Plugs.Hmac`:
+  `admin_session_token/2`, `extension_session_token/2`, `put_webhook_headers/3`,
+  `webhook_hmac/2` and `app_proxy_query/3`. `put_session/2` and
+  `put_hmac_verified/2` put on a conn what those plugs put on success.
+  `with_old_api_secret/2`, `access_token/2` and `shop_domain/0` cover key rotation,
+  stored tokens and shop domains.
+
 ## [2.1.0]
 
 ### Added
