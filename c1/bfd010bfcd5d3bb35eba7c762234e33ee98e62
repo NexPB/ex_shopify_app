@@ -1,0 +1,20 @@
+lib/ex_shopify_app/plugs/hmac.ex
+  s_b2271603f37f17::t_5ca38b3c86312a 119
+  s_b2271603f37f17::t_0a540f8c974f36 91-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1bfd010bfcd5d3bb35eba7c762234e33ee98e62",
+  "prompts": {},
+  "sessions": {
+    "s_b2271603f37f17": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6cec83b-3d70-45f0-8b5f-65ee71d24d2b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
