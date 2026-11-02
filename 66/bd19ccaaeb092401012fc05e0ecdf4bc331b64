@@ -1,0 +1,21 @@
+CHANGELOG.md
+  s_9d13a4edd564b1::t_df8b368b36a795 18
+lib/ex_shopify_app/testing.ex
+  s_9d13a4edd564b1::t_e413820a0b72a4 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "66bd19ccaaeb092401012fc05e0ecdf4bc331b64",
+  "prompts": {},
+  "sessions": {
+    "s_9d13a4edd564b1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cc11aa1b-b5e3-4910-a35a-97097a9447db",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
