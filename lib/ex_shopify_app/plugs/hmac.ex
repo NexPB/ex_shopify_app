@@ -88,6 +88,10 @@ defmodule ExShopifyApp.Plugs.Hmac do
   Returns `:error` when `key` is missing or repeated. Shopify sends
   `logged_in_customer_id` with an empty value when no customer is logged in.
 
+  A client that reads the signed query string can change the values this function
+  returns, so never send that query string back in a response, a redirect or a log
+  the client can read.
+
   Raises `ArgumentError` when this plug did not verify the request with
   `scheme: :app_proxy`, or when `key` is `"signature"`. A plug that also runs on
   other routes checks `verified_scheme/1` first.
@@ -112,6 +116,7 @@ defmodule ExShopifyApp.Plugs.Hmac do
       :app_proxy ->
         # Not `conn.params`: a body or path param overrides a query param there. Shopify
         # signs `a=1&a=2` as `a=1,2`, so neither value of a repeated key is signed alone.
+        # Shopify joins the pairs with no separator, so one signature fits other queries (#21).
         conn.query_string
         |> URI.query_decoder()
         |> Enum.filter(&(elem(&1, 0) == key))
