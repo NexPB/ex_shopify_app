@@ -71,11 +71,26 @@ defmodule ExShopifyApp.Plugs.Hmac do
   end
 
   @doc """
+  Returns the scheme this plug verified the request with, or `nil` if it did not.
+
+  ## Example
+
+      iex> ExShopifyApp.Plugs.Hmac.verified_scheme(Plug.Test.conn(:get, "/proxy"))
+      nil
+
+  """
+  @spec verified_scheme(Conn.t()) :: :webhook | :app_proxy | nil
+  def verified_scheme(%Conn{} = conn), do: conn.private[:ex_shopify_app_hmac]
+
+  @doc """
   Fetches a query parameter of a request this plug verified with `scheme: :app_proxy`.
 
-  Returns `:error` when the request was not verified with `scheme: :app_proxy`, when
-  `key` is missing or repeated, and for `"signature"`. Shopify sends
+  Returns `:error` when `key` is missing or repeated. Shopify sends
   `logged_in_customer_id` with an empty value when no customer is logged in.
+
+  Raises `ArgumentError` when this plug did not verify the request with
+  `scheme: :app_proxy`, or when `key` is `"signature"`. A plug that also runs on
+  other routes checks `verified_scheme/1` first.
 
   ## Example
 
@@ -88,20 +103,29 @@ defmodule ExShopifyApp.Plugs.Hmac do
 
   """
   @spec fetch_signed_param(Conn.t(), String.t()) :: {:ok, String.t()} | :error
-  def fetch_signed_param(%Conn{private: %{ex_shopify_app_hmac: :app_proxy}} = conn, key)
-      when is_binary(key) and key != "signature" do
-    # Not `conn.params`: a body or path param overrides a query param there. Shopify
-    # signs `a=1&a=2` as `a=1,2`, so neither value of a repeated key is signed alone.
-    conn.query_string
-    |> URI.query_decoder()
-    |> Enum.filter(&(elem(&1, 0) == key))
-    |> case do
-      [{^key, value}] -> {:ok, value}
-      _ -> :error
-    end
+  def fetch_signed_param(%Conn{}, "signature") do
+    raise ArgumentError, ~s(the app proxy signature does not sign the "signature" parameter)
   end
 
-  def fetch_signed_param(%Conn{}, key) when is_binary(key), do: :error
+  def fetch_signed_param(%Conn{} = conn, key) when is_binary(key) do
+    case verified_scheme(conn) do
+      :app_proxy ->
+        # Not `conn.params`: a body or path param overrides a query param there. Shopify
+        # signs `a=1&a=2` as `a=1,2`, so neither value of a repeated key is signed alone.
+        conn.query_string
+        |> URI.query_decoder()
+        |> Enum.filter(&(elem(&1, 0) == key))
+        |> case do
+          [{^key, value}] -> {:ok, value}
+          _ -> :error
+        end
+
+      scheme ->
+        raise ArgumentError,
+              "fetch_signed_param/2 requires a request that ExShopifyApp.Plugs.Hmac " <>
+                "verified with scheme: :app_proxy, got scheme: #{inspect(scheme)}"
+    end
+  end
 
   @spec verify(Conn.t(), :webhook | :app_proxy, keyword()) :: :ok | {:error, reason()}
   defp verify(%Conn{} = conn, :webhook, _opts) do

@@ -11,8 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `ExShopifyApp.Plugs.Hmac.fetch_signed_param/2` returns a query parameter of a request
   that `ExShopifyApp.Plugs.Hmac` verified with `scheme: :app_proxy`, for example
-  `logged_in_customer_id`. It returns `:error` for any other request and for a missing
-  or repeated key.
+  `logged_in_customer_id`. It returns `:error` for a missing or repeated key. It raises
+  `ArgumentError` for a request that `Hmac` did not verify with `scheme: :app_proxy`,
+  and for the `"signature"` key.
+- `ExShopifyApp.Plugs.Hmac.verified_scheme/1` returns the scheme that
+  `ExShopifyApp.Plugs.Hmac` verified the request with, or `nil`.
 
 ## [2.0.1]
 

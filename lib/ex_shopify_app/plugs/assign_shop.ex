@@ -47,7 +47,7 @@ defmodule ExShopifyApp.Plugs.AssignShop do
         :header ->
           # Shopify's webhook HMAC does not cover this header: a verified body rejects
           # forged requests, not a replayed body sent with a different header.
-          with :webhook <- conn.private[:ex_shopify_app_hmac],
+          with :webhook <- Hmac.verified_scheme(conn),
                [shopify_domain] <- Conn.get_req_header(conn, "x-shopify-shop-domain") do
             shopify_domain
           else
@@ -55,13 +55,15 @@ defmodule ExShopifyApp.Plugs.AssignShop do
           end
 
         :app_proxy ->
-          case Hmac.fetch_signed_param(conn, "shop") do
-            {:ok, shopify_domain} -> shopify_domain
-            :error -> nil
+          with :app_proxy <- Hmac.verified_scheme(conn),
+               {:ok, shopify_domain} <- Hmac.fetch_signed_param(conn, "shop") do
+            shopify_domain
+          else
+            _ -> nil
           end
 
         :flow_action ->
-          with :webhook <- conn.private[:ex_shopify_app_hmac],
+          with :webhook <- Hmac.verified_scheme(conn),
                %{"shopify_domain" => shopify_domain} <- conn.body_params do
             shopify_domain
           else

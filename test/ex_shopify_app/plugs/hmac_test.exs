@@ -7,6 +7,8 @@ defmodule ExShopifyApp.Plugs.HmacTest do
   alias ExShopifyApp.Plugs.Hmac
   alias Plug.Conn
 
+  doctest Hmac
+
   @body ~s({"id":1})
 
   describe "init/1" do
@@ -158,10 +160,15 @@ defmodule ExShopifyApp.Plugs.HmacTest do
       assert Hmac.fetch_signed_param(conn, "logged_in_customer_id") == {:ok, ""}
     end
 
-    test "returns :error for a repeated, missing or signature key", %{conn: conn} do
+    test "returns :error for a repeated or missing key", %{conn: conn} do
       assert Hmac.fetch_signed_param(conn, "extra") == :error
       assert Hmac.fetch_signed_param(conn, "missing") == :error
-      assert Hmac.fetch_signed_param(conn, "signature") == :error
+    end
+
+    test "raises for the signature key", %{conn: conn} do
+      assert_raise ArgumentError, ~r/does not sign the "signature" parameter/, fn ->
+        Hmac.fetch_signed_param(conn, "signature")
+      end
     end
 
     test "ignores a body parameter with the same key" do
@@ -174,7 +181,7 @@ defmodule ExShopifyApp.Plugs.HmacTest do
       assert Hmac.fetch_signed_param(conn, "shop") == {:ok, "acme.myshopify.com"}
     end
 
-    test "returns :error unless the request was verified with scheme: :app_proxy" do
+    test "raises unless the request was verified with scheme: :app_proxy" do
       unverified = conn(:get, "/proxy?shop=acme.myshopify.com")
 
       webhook =
@@ -184,8 +191,33 @@ defmodule ExShopifyApp.Plugs.HmacTest do
         |> run(scheme: :webhook)
 
       refute webhook.halted
-      assert Hmac.fetch_signed_param(unverified, "shop") == :error
-      assert Hmac.fetch_signed_param(webhook, "shop") == :error
+
+      assert_raise ArgumentError, ~r/scheme: :app_proxy, got scheme: nil/, fn ->
+        Hmac.fetch_signed_param(unverified, "shop")
+      end
+
+      assert_raise ArgumentError, ~r/scheme: :app_proxy, got scheme: :webhook/, fn ->
+        Hmac.fetch_signed_param(webhook, "shop")
+      end
+    end
+  end
+
+  describe "verified_scheme/1" do
+    test "returns the scheme the plug verified" do
+      webhook = :post |> webhook_conn(@body, webhook_signature(@body)) |> run(scheme: :webhook)
+      app_proxy = :get |> conn("/proxy?" <> app_proxy_query(now())) |> run(scheme: :app_proxy)
+
+      assert Hmac.verified_scheme(webhook) == :webhook
+      assert Hmac.verified_scheme(app_proxy) == :app_proxy
+    end
+
+    test "returns nil for a request the plug rejected" do
+      conn = :get |> conn("/proxy?" <> app_proxy_query(now() - 301))
+
+      {conn, _log} = with_log(fn -> run(conn, scheme: :app_proxy) end)
+
+      assert conn.halted
+      assert Hmac.verified_scheme(conn) == nil
     end
   end
 
