@@ -14,7 +14,7 @@ Add `ex_shopify_app` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_shopify_app, "~> 1.0"}
+    {:ex_shopify_app, "~> 2.2"}
   ]
 end
 ```
