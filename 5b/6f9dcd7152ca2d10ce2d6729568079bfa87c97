@@ -1,0 +1,26 @@
+CHANGELOG.md
+  s_e43c24278ae90e::t_2e6d352bd067be 10-11,246-247
+mix.exs
+  s_e43c24278ae90e::t_2e6d352bd067be 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b6f9dcd7152ca2d10ce2d6729568079bfa87c97",
+  "prompts": {},
+  "humans": {
+    "h_963ee31fe77864": {
+      "author": "NexPB <lorenzo@nexp.be>"
+    }
+  },
+  "sessions": {
+    "s_e43c24278ae90e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3838238-8613-46f9-9f87-bd50918d3947",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <lorenzo@nexp.be>"
+    }
+  }
+}
