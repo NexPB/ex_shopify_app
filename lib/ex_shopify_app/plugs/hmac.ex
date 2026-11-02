@@ -116,7 +116,6 @@ defmodule ExShopifyApp.Plugs.Hmac do
       :app_proxy ->
         # Not `conn.params`: a body or path param overrides a query param there. Shopify
         # signs `a=1&a=2` as `a=1,2`, so neither value of a repeated key is signed alone.
-        # Shopify joins the pairs with no separator, so one signature fits other queries (#21).
         conn.query_string
         |> URI.query_decoder()
         |> Enum.filter(&(elem(&1, 0) == key))
