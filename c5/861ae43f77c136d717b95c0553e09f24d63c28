@@ -1,0 +1,27 @@
+lib/ex_shopify_app/plugs/assign_shop.ex
+  s_b2271603f37f17::t_9565a1346e759d 28
+  s_b2271603f37f17::t_44b91117a3f852 58-60
+test/ex_shopify_app/plugs/hmac_test.exs
+  s_b2271603f37f17::t_8bce22b4a29755 148-191
+CHANGELOG.md
+  s_b2271603f37f17::t_bff8813ff10b15 8-16
+lib/ex_shopify_app/plugs/hmac.ex
+  s_b2271603f37f17::t_f3ab6cd10038d0 15
+  s_b2271603f37f17::t_e7f064a9e4e01f 73-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c5861ae43f77c136d717b95c0553e09f24d63c28",
+  "prompts": {},
+  "sessions": {
+    "s_b2271603f37f17": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6cec83b-3d70-45f0-8b5f-65ee71d24d2b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
