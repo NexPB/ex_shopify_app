@@ -1,6 +1,7 @@
 defmodule ExShopifyApp.Plugs.HmacTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
   import Plug.Test
 
   alias ExShopifyApp.Plugs.Hmac
@@ -24,12 +25,41 @@ defmodule ExShopifyApp.Plugs.HmacTest do
     end
 
     test "rejects a body the header does not sign" do
-      conn =
-        :post
-        |> webhook_conn(~s({"id":2}), webhook_signature(@body))
-        |> run(scheme: :webhook)
+      {conn, log} =
+        with_log(fn ->
+          :post
+          |> webhook_conn(~s({"id":2}), webhook_signature(@body))
+          |> run(scheme: :webhook)
+        end)
 
       assert_unauthorized(conn)
+      assert log =~ "Hmac rejected POST /webhooks (scheme: webhook): invalid_signature"
+    end
+
+    test "rejects a signed request whose body was not cached" do
+      {conn, log} =
+        with_log(fn ->
+          :post
+          |> conn("/webhooks", @body)
+          |> Conn.put_req_header("x-shopify-hmac-sha256", webhook_signature(@body))
+          |> run(scheme: :webhook)
+        end)
+
+      assert_unauthorized(conn)
+      assert log =~ "body_not_cached"
+    end
+
+    test "rejects a request without the header" do
+      {conn, log} =
+        with_log(fn ->
+          :post
+          |> conn("/webhooks", @body)
+          |> Conn.assign(:raw_body, [@body])
+          |> run(scheme: :webhook)
+        end)
+
+      assert_unauthorized(conn)
+      assert log =~ "missing_signature"
     end
 
     test "rejects a repeated header" do
@@ -72,7 +102,21 @@ defmodule ExShopifyApp.Plugs.HmacTest do
     test "rejects a timestamp older than :max_age" do
       query = app_proxy_query(now() - 301)
 
-      assert_unauthorized(:get |> conn("/proxy?" <> query) |> run(scheme: :app_proxy))
+      {conn, log} =
+        with_log(fn -> :get |> conn("/proxy?" <> query) |> run(scheme: :app_proxy) end)
+
+      assert_unauthorized(conn)
+      assert log =~ "Hmac rejected GET /proxy (scheme: app_proxy): invalid_timestamp"
+    end
+
+    test "rejects a repeated signature" do
+      query = app_proxy_query(now()) <> "&signature=0"
+
+      {conn, log} =
+        with_log(fn -> :get |> conn("/proxy?" <> query) |> run(scheme: :app_proxy) end)
+
+      assert_unauthorized(conn)
+      assert log =~ "repeated_signature"
     end
 
     test "rejects a timestamp further than :max_age in the future" do

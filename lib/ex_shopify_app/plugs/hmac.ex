@@ -2,9 +2,9 @@ defmodule ExShopifyApp.Plugs.Hmac do
   @moduledoc """
   A plug to verify that Shopify signed a request.
 
-  Responds `401` and halts when the signature is missing or matches none of
-  `ExShopifyApp.verifying_secrets/0`. On success it stores the verified scheme in
-  `conn.private[:ex_shopify_app_hmac]`.
+  Responds `401`, halts and logs a warning with the reason when the signature is
+  missing or matches none of `ExShopifyApp.verifying_secrets/0`. On success it stores
+  the verified scheme in `conn.private[:ex_shopify_app_hmac]`.
 
   ## Options
 
@@ -24,7 +24,16 @@ defmodule ExShopifyApp.Plugs.Hmac do
 
   import ExShopifyApp, only: [verifying_secrets: 0]
 
+  require Logger
+
   @schemes [:webhook, :app_proxy]
+
+  @type reason ::
+          :missing_signature
+          | :repeated_signature
+          | :body_not_cached
+          | :invalid_timestamp
+          | :invalid_signature
 
   def init(opts) do
     case Keyword.get(opts, :scheme) do
@@ -41,29 +50,45 @@ defmodule ExShopifyApp.Plugs.Hmac do
   def call(%Conn{} = conn, opts) do
     scheme = Keyword.fetch!(opts, :scheme)
 
-    if verified?(conn, scheme, opts) do
-      Conn.put_private(conn, :ex_shopify_app_hmac, scheme)
-    else
-      conn
-      |> Conn.put_status(:unauthorized)
-      |> Conn.send_resp(401, "Unauthorized")
-      |> Conn.halt()
+    case verify(conn, scheme, opts) do
+      :ok ->
+        Conn.put_private(conn, :ex_shopify_app_hmac, scheme)
+
+      {:error, reason} ->
+        Logger.warning(
+          "ex_shopify_app: Hmac rejected #{conn.method} #{conn.request_path} " <>
+            "(scheme: #{scheme}): #{reason}",
+          hmac_scheme: scheme,
+          hmac_reason: reason
+        )
+
+        conn
+        |> Conn.put_status(:unauthorized)
+        |> Conn.send_resp(401, "Unauthorized")
+        |> Conn.halt()
     end
   end
 
-  @spec verified?(Conn.t(), :webhook | :app_proxy, keyword()) :: boolean()
-  defp verified?(%Conn{} = conn, :webhook, _opts) do
+  @spec verify(Conn.t(), :webhook | :app_proxy, keyword()) :: :ok | {:error, reason()}
+  defp verify(%Conn{} = conn, :webhook, _opts) do
     case Conn.get_req_header(conn, "x-shopify-hmac-sha256") do
       [signature] ->
-        body = Map.fetch!(conn.assigns, :raw_body)
-        signed?(body, signature, &Base.encode64/1)
+        case Map.fetch(conn.assigns, :raw_body) do
+          {:ok, body} -> check(body, signature, &Base.encode64/1)
+          # Plug.Parsers calls the body reader only for a content type that a parser
+          # accepts, so a request without one never caches its body.
+          :error -> {:error, :body_not_cached}
+        end
 
-      _ ->
-        false
+      [] ->
+        {:error, :missing_signature}
+
+      _signatures ->
+        {:error, :repeated_signature}
     end
   end
 
-  defp verified?(%Conn{} = conn, :app_proxy, opts) do
+  defp verify(%Conn{} = conn, :app_proxy, opts) do
     # Shopify signs the raw query: a repeated key is joined with "," and a key such as
     # `a[b]` stays flat, so Plug's parsed `query_params` can't rebuild the message.
     params =
@@ -71,15 +96,23 @@ defmodule ExShopifyApp.Plugs.Hmac do
       |> URI.query_decoder()
       |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
 
-    with {[signature], params} <- Map.pop(params, "signature"),
-         true <- fresh?(params, Keyword.fetch!(opts, :max_age)) do
-      params
-      |> Enum.map(fn {key, values} -> "#{key}=#{Enum.join(values, ",")}" end)
-      |> Enum.sort()
-      |> Enum.join()
-      |> signed?(signature, &Base.encode16(&1, case: :lower))
-    else
-      _ -> false
+    case Map.pop(params, "signature") do
+      {[signature], params} ->
+        if fresh?(params, Keyword.fetch!(opts, :max_age)) do
+          params
+          |> Enum.map(fn {key, values} -> "#{key}=#{Enum.join(values, ",")}" end)
+          |> Enum.sort()
+          |> Enum.join()
+          |> check(signature, &Base.encode16(&1, case: :lower))
+        else
+          {:error, :invalid_timestamp}
+        end
+
+      {nil, _params} ->
+        {:error, :missing_signature}
+
+      {_signatures, _params} ->
+        {:error, :repeated_signature}
     end
   end
 
@@ -92,13 +125,17 @@ defmodule ExShopifyApp.Plugs.Hmac do
 
   defp fresh?(_params, _max_age), do: false
 
-  @spec signed?(iodata(), String.t(), (binary() -> String.t())) :: boolean()
-  defp signed?(content, signature, encode) do
-    Enum.any?(verifying_secrets(), fn secret ->
-      :hmac
-      |> :crypto.mac(:sha256, secret, content)
-      |> encode.()
-      |> Plug.Crypto.secure_compare(signature)
-    end)
+  @spec check(iodata(), String.t(), (binary() -> String.t())) ::
+          :ok | {:error, :invalid_signature}
+  defp check(content, signature, encode) do
+    signed? =
+      Enum.any?(verifying_secrets(), fn secret ->
+        :hmac
+        |> :crypto.mac(:sha256, secret, content)
+        |> encode.()
+        |> Plug.Crypto.secure_compare(signature)
+      end)
+
+    if signed?, do: :ok, else: {:error, :invalid_signature}
   end
 end
