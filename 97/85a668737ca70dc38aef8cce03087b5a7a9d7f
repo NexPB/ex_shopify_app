@@ -1,0 +1,22 @@
+CHANGELOG.md
+  s_ff39b3513bbfd5::t_bfd3092b96328b 8
+  s_ff39b3513bbfd5::t_da5976ab35d806 232-233
+mix.exs
+  s_ff39b3513bbfd5::t_a688b9350a6c16 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9785a668737ca70dc38aef8cce03087b5a7a9d7f",
+  "prompts": {},
+  "sessions": {
+    "s_ff39b3513bbfd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3fb8f4bc-bb59-48d3-a4c0-d5941a8d99c4",
+        "model": "unknown"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
