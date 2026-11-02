@@ -29,32 +29,6 @@ defmodule ExShopifyApp.KeyRotationTest do
     end
   end
 
-  describe "ExShopifyApp.Testing.with_old_api_secret/2" do
-    test "sets the old secret for the function, then restores the previous one" do
-      assert ExShopifyApp.Testing.with_old_api_secret("rotated", fn ->
-               ExShopifyApp.verifying_secrets()
-             end) == ["test-api-secret", "rotated"]
-
-      assert ExShopifyApp.verifying_secrets() == ["test-api-secret", @old_secret]
-    end
-
-    test "removes the old secret when none was set" do
-      Application.delete_env(:ex_shopify_app, :old_api_secret)
-
-      ExShopifyApp.Testing.with_old_api_secret("rotated", fn -> :ok end)
-
-      assert Application.fetch_env(:ex_shopify_app, :old_api_secret) == :error
-    end
-
-    test "restores the previous secret when the function raises" do
-      assert_raise RuntimeError, fn ->
-        ExShopifyApp.Testing.with_old_api_secret("rotated", fn -> raise "boom" end)
-      end
-
-      assert ExShopifyApp.verifying_secrets() == ["test-api-secret", @old_secret]
-    end
-  end
-
   describe "ExShopifyApp.Plugs.Hmac" do
     test "accepts a webhook signed with the old secret" do
       conn = @body |> webhook_conn(@old_secret) |> Hmac.call(Hmac.init(scheme: :webhook))

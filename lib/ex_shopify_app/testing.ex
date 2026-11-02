@@ -14,7 +14,7 @@ defmodule ExShopifyApp.Testing do
   | `app_proxy_query/3` | `ExShopifyApp.Plugs.Hmac` with `scheme: :app_proxy` |
 
   Give `secret: secret` to sign with another secret, for example to test a rejected
-  request or `with_old_api_secret/2`.
+  request or the `:old_api_secret` config.
 
   `put_session/2` and `put_hmac_verified/2` put on a conn what those plugs put on
   success, to unit test a plug that runs after them.
@@ -306,34 +306,6 @@ defmodule ExShopifyApp.Testing do
   @spec put_hmac_verified(Conn.t(), :webhook | :app_proxy) :: Conn.t()
   def put_hmac_verified(%Conn{} = conn, scheme) when scheme in @schemes do
     Conn.put_private(conn, :ex_shopify_app_hmac, scheme)
-  end
-
-  @doc """
-  Runs `fun` with `secret` as the `:old_api_secret` config, then restores the config.
-
-  The config is global, so run the test with `async: false`.
-
-  ## Examples
-
-      ExShopifyApp.Testing.with_old_api_secret("old-secret", fn ->
-        ExShopifyApp.verifying_secrets()
-      end)
-      #=> ["api-secret", "old-secret"]
-
-  """
-  @spec with_old_api_secret(String.t(), (-> result)) :: result when result: term()
-  def with_old_api_secret(secret, fun) when is_binary(secret) and is_function(fun, 0) do
-    previous = Application.fetch_env(:ex_shopify_app, :old_api_secret)
-    Application.put_env(:ex_shopify_app, :old_api_secret, secret)
-
-    try do
-      fun.()
-    after
-      case previous do
-        {:ok, value} -> Application.put_env(:ex_shopify_app, :old_api_secret, value)
-        :error -> Application.delete_env(:ex_shopify_app, :old_api_secret)
-      end
-    end
   end
 
   @doc """
