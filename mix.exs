@@ -52,7 +52,7 @@ defmodule ExShopifyApp.MixProject do
 
   defp docs do
     [
-      extras: ["UPGRADE.md"]
+      extras: ["UPGRADE.md", "docs/TESTING.md"]
     ]
   end
 

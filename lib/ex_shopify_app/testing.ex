@@ -1,7 +1,7 @@
 defmodule ExShopifyApp.Testing do
   @moduledoc """
   Builds the signed requests and session tokens that Shopify sends, for the tests of
-  an app that uses `ExShopifyApp`.
+  an app that uses `ExShopifyApp`. See the [Testing guide](TESTING.md).
 
   Each helper signs with `ExShopifyApp.api_secret/0` and puts `ExShopifyApp.api_key/0`
   in the `aud` claim, so its output passes the matching plug:
@@ -18,31 +18,6 @@ defmodule ExShopifyApp.Testing do
 
   `put_session/2` and `put_hmac_verified/2` put on a conn what those plugs put on
   success, to unit test a plug that runs after them.
-
-  ## Example
-
-      import ExShopifyApp.Testing
-
-      test "renders the home page", %{conn: conn} do
-        token = admin_session_token("acme.myshopify.com")
-
-        conn
-        |> put_req_header("authorization", "Bearer " <> token)
-        |> get("/home")
-      end
-
-      test "accepts an orders/create webhook", %{conn: conn} do
-        body = JSON.encode!(%{"id" => 1})
-
-        conn
-        |> put_webhook_headers(body, shopify_domain: "acme.myshopify.com", topic: "orders/create")
-        |> dispatch(MyAppWeb.Endpoint, :post, "/webhooks", body)
-      end
-
-      test "renders the app proxy page", %{conn: conn} do
-        get(conn, "/proxy?" <> app_proxy_query("acme.myshopify.com", logged_in_customer_id: "1"))
-      end
-
   """
 
   alias ExShopifyApp.AccessToken

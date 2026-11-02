@@ -211,7 +211,8 @@ Query the Storefront API server-side with the shop's offline access token. See
 ## Testing
 
 `ExShopifyApp.Testing` signs session tokens, webhooks and app proxy queries the way
-Shopify does, so your tests can send requests through the real plugs.
+Shopify does, so your tests can send requests through the real plugs. See
+[docs/TESTING.md](docs/TESTING.md).
 
 ## Docs
 
