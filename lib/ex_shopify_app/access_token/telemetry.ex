@@ -58,7 +58,7 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
   With `retry: true`, emits `:persistence_retried` and logs a warning. Otherwise emits
   `:persistence_failed` and logs an error.
   """
-  def lost_write(domain, token, opts) do
+  def persistence_failed(domain, token, opts \\ []) do
     event =
       if Keyword.get(opts, :retry, false), do: :persistence_retried, else: :persistence_failed
 

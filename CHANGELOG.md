@@ -18,12 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The docs no longer say that a failed write loses the token. The rolled-back row keeps
   a token that Shopify still accepts, so the next refresh recovers. Do not write
   `PersistenceFailure.token` with `put_token/2`.
-
-### Removed
-
-- `ExShopifyApp.AccessToken.Telemetry.persistence_failed/2`. The store emits the event
-  through the new `Telemetry.lost_write/3`, which takes `retry: true` for
-  `:persistence_retried`.
+- `ExShopifyApp.AccessToken.Telemetry.persistence_failed/3` takes `retry: true` to
+  emit `:persistence_retried` and log a `warning` instead.
 
 ## [2.2.0]
 
