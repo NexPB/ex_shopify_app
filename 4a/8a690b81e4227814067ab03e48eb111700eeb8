@@ -1,0 +1,37 @@
+README.md
+  s_a8ddc3aa02cf4e::t_c599965f28ee21 166-173,175-177
+  s_a8ddc3aa02cf4e::t_a54186b30df6d5 184
+  s_a8ddc3aa02cf4e::t_8a1c1f7d363456 192
+lib/ex_shopify_app/access_token/persistence_failure.ex
+  s_a8ddc3aa02cf4e::t_a2566f74bb7311 3,7,9-11
+test/ex_shopify_app/access_token/repo_test.exs
+  s_a8ddc3aa02cf4e::t_44af79f20a8178 282-283,285-286,288-289,291,293-316,325-327,332,335
+  s_a8ddc3aa02cf4e::t_c8eb3e9823fa84 369-387
+test/support/failing_update_repo.ex
+  s_a8ddc3aa02cf4e::t_64883e120c61f1 32-64
+CHANGELOG.md
+  s_a8ddc3aa02cf4e::t_1cbdf905abbaaf 10-21
+lib/ex_shopify_app/access_token/telemetry.ex
+  s_a8ddc3aa02cf4e::t_bfcf85de6da53e 8-11
+  s_a8ddc3aa02cf4e::t_9656cf7f5e32b1 55-65,67-75,77
+lib/ex_shopify_app/access_token.ex
+  s_a8ddc3aa02cf4e::t_5fe207a0e914bf 71-73
+lib/ex_shopify_app/access_token/repo.ex
+  s_a8ddc3aa02cf4e::t_7d9e58f4dd48e6 227-229,257-259,320-327,352,362,372,398-401,416,426,434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a8a690b81e4227814067ab03e48eb111700eeb8",
+  "prompts": {},
+  "sessions": {
+    "s_a8ddc3aa02cf4e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "953c2f32-e401-4b34-a325-3ec7d3ad4fe1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
