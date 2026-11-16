@@ -372,7 +372,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
             updated
 
           {:error, reason} ->
-            report_lost_write(shop.shopify_domain, token, run_opts)
+            Telemetry.lost_write(shop.shopify_domain, token, run_opts)
 
             repo.rollback(
               {:token_persistence_failed_after_refresh,
@@ -395,14 +395,6 @@ defmodule ExShopifyApp.AccessToken.Repo do
       end
     rescue
       exception -> {:error, exception}
-    end
-  end
-
-  defp report_lost_write(domain, token, run_opts) do
-    if Keyword.get(run_opts, :retry, false) do
-      Telemetry.persistence_retried(domain, token)
-    else
-      Telemetry.persistence_failed(domain, token)
     end
   end
 
@@ -439,7 +431,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
             updated
 
           {:error, reason} ->
-            report_lost_write(shop.shopify_domain, token, run_opts)
+            Telemetry.lost_write(shop.shopify_domain, token, run_opts)
 
             repo.rollback(
               {:token_persistence_failed_after_refresh,

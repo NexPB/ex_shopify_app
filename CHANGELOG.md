@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a token that Shopify still accepts, so the next refresh recovers. Do not write
   `PersistenceFailure.token` with `put_token/2`.
 
+### Removed
+
+- `ExShopifyApp.AccessToken.Telemetry.persistence_failed/2`. The store emits the event
+  through the new `Telemetry.lost_write/3`, which takes `retry: true` for
+  `:persistence_retried`.
+
 ## [2.2.0]
 
 ### Added
