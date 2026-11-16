@@ -1,0 +1,23 @@
+lib/ex_shopify_app/access_token/telemetry.ex
+  s_a8ddc3aa02cf4e::t_0ef02b7f66e925 55-63,65-77,84
+CHANGELOG.md
+  s_a8ddc3aa02cf4e::t_3101cb0729ea37 22-27
+lib/ex_shopify_app/access_token/repo.ex
+  s_a8ddc3aa02cf4e::t_e1c53a1417e21e 375,434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b9682c20dd82076024bb2f93e75758c01fe0ef99",
+  "prompts": {},
+  "sessions": {
+    "s_a8ddc3aa02cf4e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "953c2f32-e401-4b34-a325-3ec7d3ad4fe1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
