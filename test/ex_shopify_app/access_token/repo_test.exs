@@ -7,9 +7,19 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   import ExShopifyApp.HTTPMockHelpers, only: [stub_http_json: 2, expect_http_call: 3]
 
   alias ExShopifyApp.AccessToken.PersistenceFailure
+  alias ExShopifyApp.FailingUpdateRepo
 
   # Asserts every `expect`ed call count was met (and not exceeded) at the end of a test.
   setup :verify_on_exit!
+
+  setup context do
+    if count = context[:failed_updates] do
+      FailingUpdateRepo.fail_updates(count)
+      on_exit(&FailingUpdateRepo.reset/0)
+    end
+
+    :ok
+  end
 
   # --- put_token / fetch_token ----------------------------------------------
 
@@ -279,6 +289,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
   # --- persistence failure after a successful refresh ------------------------
 
+  @tag failed_updates: 1
   test "a write that fails once is retried and the refresh succeeds" do
     domain = "persistretry.myshopify.com"
     insert(:expired_token, shopify_domain: domain)
@@ -286,7 +297,7 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
     attach_lost_write_events()
 
     assert {:ok, %Token{refresh_token: "shprt_new", refresh_generation: 1}} =
-             ExShopifyApp.FailingOnceStore.refresh_token(%{shopify_domain: domain})
+             ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
 
     assert %Token{refresh_token: "shprt_new", refresh_generation: 1} = stored(domain)
 
@@ -297,13 +308,14 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
                     _m, _meta}
   end
 
+  @tag failed_updates: 1
   test "a migration whose write fails once is retried and succeeds" do
     domain = "migpersistretry.myshopify.com"
     insert(:lifetime_token, shopify_domain: domain)
     expect_refresh(2)
 
     assert {:ok, %Token{refresh_token: "shprt_new"} = token} =
-             ExShopifyApp.FailingOnceStore.migrate_token(%{shopify_domain: domain})
+             ExShopifyApp.FailingStore.migrate_token(%{shopify_domain: domain})
 
     assert not is_nil(token.expires_at)
     assert %Token{refresh_token: "shprt_new"} = stored(domain)
