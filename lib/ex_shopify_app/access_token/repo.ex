@@ -221,11 +221,12 @@ defmodule ExShopifyApp.AccessToken.Repo do
   """
   @spec refresh_token(module(), Shop.t(), keyword()) :: {:ok, Token.t()} | {:error, term()}
   def refresh_token(repo, shop, opts \\ []) do
-    domain = Shop.normalize_domain(shop.shopify_domain)
+    shop = %{shop | shopify_domain: Shop.normalize_domain(shop.shopify_domain)}
+    domain = shop.shopify_domain
 
     run_detached(repo, domain, fn ->
       with_refresh_telemetry(domain, fn ->
-        retry_lost_write(&locked_refresh(repo, shop, domain, opts, &1))
+        retry_lost_write(&locked_refresh(repo, shop, opts, &1))
       end)
     end)
   end
@@ -324,7 +325,9 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  defp locked_refresh(repo, shop, domain, opts, run_opts) do
+  defp locked_refresh(repo, shop, opts, run_opts) do
+    domain = shop.shopify_domain
+
     txn =
       repo.transaction(
         fn ->
@@ -349,7 +352,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
               token
 
             true ->
-              perform_refresh(repo, shop, token, now, domain, run_opts)
+              perform_refresh(repo, shop, token, run_opts)
           end
         end,
         Options.transaction_opts(opts)
@@ -359,17 +362,17 @@ defmodule ExShopifyApp.AccessToken.Repo do
     txn
   end
 
-  defp perform_refresh(repo, shop, token, now, domain, run_opts) do
+  defp perform_refresh(repo, shop, token, run_opts) do
     case AccessToken.refresh(shop, token.refresh_token) do
       {:ok, refreshed} ->
         # Nothing but the DB write should happen between the refresh response and the
         # commit — the new refresh token is not yet durable.
-        case persist_refreshed(repo, token, refreshed, now) do
+        case persist_refreshed(repo, token, refreshed) do
           {:ok, updated} ->
             updated
 
           {:error, reason} ->
-            report_lost_write(domain, token, run_opts)
+            report_lost_write(shop.shopify_domain, token, run_opts)
 
             repo.rollback(
               {:token_persistence_failed_after_refresh,
@@ -382,7 +385,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  defp persist_refreshed(repo, token, refreshed, _now) do
+  defp persist_refreshed(repo, token, refreshed) do
     changeset = Token.prepare_refresh_changes(refreshed, token)
 
     try do
@@ -431,7 +434,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
   defp perform_migrate(repo, shop, token, run_opts) do
     case AccessToken.migrate(shop, token.access_token) do
       {:ok, migrated} ->
-        case persist_refreshed(repo, token, migrated, nil) do
+        case persist_refreshed(repo, token, migrated) do
           {:ok, updated} ->
             updated
 
