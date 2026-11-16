@@ -279,51 +279,66 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
 
   # --- persistence failure after a successful refresh ------------------------
 
-  test "persistence failure after Shopify success is critical and emits telemetry" do
+  test "a write that fails once is retried and the refresh succeeds" do
+    domain = "persistretry.myshopify.com"
+    insert(:expired_token, shopify_domain: domain)
+    expect_refresh(2)
+    attach_lost_write_events()
+
+    assert {:ok, %Token{refresh_token: "shprt_new", refresh_generation: 1}} =
+             ExShopifyApp.FailingOnceStore.refresh_token(%{shopify_domain: domain})
+
+    assert %Token{refresh_token: "shprt_new", refresh_generation: 1} = stored(domain)
+
+    assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_retried],
+                    _m, %{shopify_domain: ^domain, refresh_generation: 0}}
+
+    refute_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
+                    _m, _meta}
+  end
+
+  test "a migration whose write fails once is retried and succeeds" do
+    domain = "migpersistretry.myshopify.com"
+    insert(:lifetime_token, shopify_domain: domain)
+    expect_refresh(2)
+
+    assert {:ok, %Token{refresh_token: "shprt_new"} = token} =
+             ExShopifyApp.FailingOnceStore.migrate_token(%{shopify_domain: domain})
+
+    assert not is_nil(token.expires_at)
+    assert %Token{refresh_token: "shprt_new"} = stored(domain)
+  end
+
+  test "a write that fails twice returns the error and keeps the stored token" do
     domain = "persistfail.myshopify.com"
     insert(:expired_token, shopify_domain: domain)
-    expect_refresh(1)
+    expect_refresh(2)
+    attach_lost_write_events()
 
-    handler = "persist-failed-#{System.unique_integer([:positive])}"
-    test_pid = self()
-
-    :telemetry.attach(
-      handler,
-      [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
-      fn event, measurements, meta, _ ->
-        send(test_pid, {:telemetry, event, measurements, meta})
-      end,
-      nil
-    )
-
-    on_exit(fn -> :telemetry.detach(handler) end)
-
-    # The exchanged-but-unpersisted token is surfaced (not discarded) so a caller can
-    # retry the write; `reason` carries the original write error.
     assert {:error,
             {:token_persistence_failed_after_refresh,
              %PersistenceFailure{reason: :persist_boom, token: %Token{}}}} =
              ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
 
-    # Shopify was called (expect_refresh(1)), but the row is untouched (rolled back).
     assert %Token{refresh_token: "shprt_old", refresh_generation: 0} = stored(domain)
+
+    assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_retried],
+                    _m, %{shopify_domain: ^domain}}
 
     assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
                     _m, %{shopify_domain: ^domain}}
   end
 
-  test "migrate persistence failure surfaces the exchanged token for retry" do
+  test "a migration whose write fails twice surfaces the exchanged token" do
     domain = "migpersistfail.myshopify.com"
     insert(:lifetime_token, shopify_domain: domain)
-    expect_refresh(1)
+    expect_refresh(2)
 
     assert {:error,
             {:token_persistence_failed_after_refresh,
              %PersistenceFailure{reason: :persist_boom, token: %Token{} = token}}} =
              ExShopifyApp.FailingStore.migrate_token(%{shopify_domain: domain})
 
-    # The surfaced token is the new *expiring* one (not the lifetime input), ready to
-    # re-persist; without this the exchanged token would be lost.
     assert token.refresh_token == "shprt_new"
     assert not is_nil(token.expires_at)
 
@@ -349,6 +364,25 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
       times: n,
       status: 200
     )
+  end
+
+  defp attach_lost_write_events do
+    handler = "lost-write-#{System.unique_integer([:positive])}"
+    test_pid = self()
+
+    :telemetry.attach_many(
+      handler,
+      [
+        [:ex_shopify_app, :access_token, :refresh, :persistence_retried],
+        [:ex_shopify_app, :access_token, :refresh, :persistence_failed]
+      ],
+      fn event, measurements, meta, _ ->
+        send(test_pid, {:telemetry, event, measurements, meta})
+      end,
+      nil
+    )
+
+    on_exit(fn -> :telemetry.detach(handler) end)
   end
 
   # Assert that no Shopify refresh call is made: a stub that fails the test if invoked.

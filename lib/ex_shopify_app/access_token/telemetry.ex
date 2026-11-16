@@ -5,8 +5,10 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
   All events share the `[:ex_shopify_app, :access_token, :refresh]` prefix:
 
     * `[..., :start | :stop | :exception]` — the refresh span.
-    * `[..., :persistence_failed]` — Shopify returned a new token but the durable write
-      failed (also logged at `error`).
+    * `[..., :persistence_retried]` — Shopify returned a new token but the durable write
+      failed, so the refresh runs once more (also logged at `warning`).
+    * `[..., :persistence_failed]` — the write failed on that second run too (also
+      logged at `error`).
     * `[..., :stale_while_error]` — a refresh failed but the still-valid old token was
       served.
 
@@ -50,21 +52,34 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
     )
   end
 
-  @doc "Emit the `:persistence_failed` event and log the critical loss-of-token warning."
+  @doc "Emit the `:persistence_retried` event and log a warning."
+  def persistence_retried(domain, token) do
+    lost_write(:persistence_retried, domain, token)
+
+    Logger.warning(
+      "ex_shopify_app: the write after a successful Shopify refresh failed for #{domain}. " <>
+        "Refreshing again from the stored token."
+    )
+  end
+
+  @doc "Emit the `:persistence_failed` event and log an error."
   def persistence_failed(domain, token) do
+    lost_write(:persistence_failed, domain, token)
+
+    Logger.error(
+      "ex_shopify_app: the write after a successful Shopify refresh failed twice for " <>
+        "#{domain}. The stored token stays in place, and the next refresh uses it."
+    )
+  end
+
+  defp lost_write(event, domain, token) do
     :telemetry.execute(
-      @event ++ [:persistence_failed],
+      @event ++ [event],
       %{system_time: System.system_time()},
       %{
         shopify_domain: domain,
         refresh_generation: token.refresh_generation
       }
-    )
-
-    Logger.error(
-      "ex_shopify_app: durable persistence FAILED after a successful Shopify refresh " <>
-        "for #{domain} (token values redacted). The new refresh token may be lost — " <>
-        "the shop may need to reauthorize."
     )
   end
 
