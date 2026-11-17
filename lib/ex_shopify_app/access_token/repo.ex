@@ -226,7 +226,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
     run_detached(repo, domain, fn ->
       with_refresh_telemetry(domain, fn ->
-        retry_lost_write(&locked_refresh(repo, shop, opts, &1))
+        retry_lost_write(domain, fn -> locked_refresh(repo, shop, opts) end)
       end)
     end)
   end
@@ -256,7 +256,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
 
     run_detached(repo, domain, fn ->
       with_refresh_telemetry(domain, fn ->
-        retry_lost_write(&locked_migrate(repo, shop, opts, &1))
+        retry_lost_write(domain, fn -> locked_migrate(repo, shop, opts) end)
       end)
     end)
   end
@@ -318,14 +318,39 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  defp retry_lost_write(locked_run) when is_function(locked_run, 1) do
-    case locked_run.(retry: true) do
-      {:error, {:token_persistence_failed_after_refresh, _}} -> locked_run.(retry: false)
-      result -> result
+  defp retry_lost_write(domain, locked_run) when is_function(locked_run, 0) do
+    with {:error, {:lost_write, stored, failure}} <- locked_run.() do
+      Telemetry.persistence_failed(domain, stored, retry: true)
+
+      retry_result =
+        try do
+          locked_run.()
+        rescue
+          exception ->
+            if RefreshResult.lock_timeout?(exception),
+              do: {:error, {:lock_timeout, exception}},
+              else: {:error, {:refresh_crashed, exception}}
+        end
+
+      case retry_result do
+        {:ok, _} = result ->
+          result
+
+        {:error, {:lost_write, _stored, retry_failure}} ->
+          result = {:error, {:token_persistence_failed_after_refresh, retry_failure}}
+          Telemetry.persistence_failed(domain, stored, retry_result: result)
+          result
+
+        # The retry stored no token, so `failure.token` may be the only pair Shopify
+        # still accepts.
+        {:error, _} ->
+          Telemetry.persistence_failed(domain, stored, retry_result: retry_result)
+          {:error, {:token_persistence_failed_after_refresh, failure}}
+      end
     end
   end
 
-  defp locked_refresh(repo, shop, opts, run_opts) do
+  defp locked_refresh(repo, shop, opts) do
     domain = shop.shopify_domain
 
     txn =
@@ -352,7 +377,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
               token
 
             true ->
-              perform_refresh(repo, shop, token, run_opts)
+              perform_refresh(repo, shop, token)
           end
         end,
         Options.transaction_opts(opts)
@@ -362,7 +387,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     txn
   end
 
-  defp perform_refresh(repo, shop, token, run_opts) do
+  defp perform_refresh(repo, shop, token) do
     case AccessToken.refresh(shop, token.refresh_token) do
       {:ok, refreshed} ->
         # Nothing but the DB write should happen between the refresh response and the
@@ -372,11 +397,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
             updated
 
           {:error, reason} ->
-            Telemetry.persistence_failed(shop.shopify_domain, token, run_opts)
-
             repo.rollback(
-              {:token_persistence_failed_after_refresh,
-               %PersistenceFailure{reason: reason, token: refreshed}}
+              {:lost_write, token, %PersistenceFailure{reason: reason, token: refreshed}}
             )
         end
 
@@ -398,7 +420,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     end
   end
 
-  defp locked_migrate(repo, shop, opts, run_opts) do
+  defp locked_migrate(repo, shop, opts) do
     domain = shop.shopify_domain
 
     txn =
@@ -413,7 +435,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
           cond do
             is_nil(token) -> repo.rollback(:no_token)
             not migration_needed?(token) -> token
-            true -> perform_migrate(repo, shop, token, run_opts)
+            true -> perform_migrate(repo, shop, token)
           end
         end,
         Options.transaction_opts(opts)
@@ -423,7 +445,7 @@ defmodule ExShopifyApp.AccessToken.Repo do
     txn
   end
 
-  defp perform_migrate(repo, shop, token, run_opts) do
+  defp perform_migrate(repo, shop, token) do
     case AccessToken.migrate(shop, token.access_token) do
       {:ok, migrated} ->
         case persist_refreshed(repo, token, migrated) do
@@ -431,11 +453,8 @@ defmodule ExShopifyApp.AccessToken.Repo do
             updated
 
           {:error, reason} ->
-            Telemetry.persistence_failed(shop.shopify_domain, token, run_opts)
-
             repo.rollback(
-              {:token_persistence_failed_after_refresh,
-               %PersistenceFailure{reason: reason, token: migrated}}
+              {:lost_write, token, %PersistenceFailure{reason: reason, token: migrated}}
             )
         end
 

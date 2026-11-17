@@ -4,7 +4,8 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
   # sandbox in shared mode so spawned processes can use the test's connection/transaction.
   use ExShopifyApp.RepoCase, async: false
 
-  import ExShopifyApp.HTTPMockHelpers, only: [stub_http_json: 2, expect_http_call: 3]
+  import ExShopifyApp.HTTPMockHelpers,
+    only: [stub_http_json: 2, expect_http_call: 3, expect_http_json: 2]
 
   alias ExShopifyApp.AccessToken.PersistenceFailure
   alias ExShopifyApp.FailingUpdateRepo
@@ -338,7 +339,43 @@ defmodule ExShopifyApp.AccessToken.RepoTest do
                     _m, %{shopify_domain: ^domain}}
 
     assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
-                    _m, %{shopify_domain: ^domain}}
+                    _m, %{shopify_domain: ^domain, result: :persistence_failed}}
+  end
+
+  @tag failed_updates: 1
+  test "a retry that Shopify rejects returns the token from the first exchange" do
+    domain = "persistretryrejected.myshopify.com"
+    insert(:expired_token, shopify_domain: domain)
+    expect_refresh(1)
+    expect_http_json(%{"error" => "invalid_grant"}, status: 400)
+    attach_lost_write_events()
+
+    assert {:error,
+            {:token_persistence_failed_after_refresh,
+             %PersistenceFailure{reason: :persist_boom, token: %Token{refresh_token: "shprt_new"}}}} =
+             ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
+
+    assert %Token{refresh_token: "shprt_old", refresh_generation: 0} = stored(domain)
+
+    assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
+                    _m, %{shopify_domain: ^domain, result: :reauthorization_required}}
+  end
+
+  @tag failed_updates: 1
+  test "a retry whose Shopify call fails returns the token from the first exchange" do
+    domain = "persistretryfailed.myshopify.com"
+    insert(:expired_token, shopify_domain: domain)
+    expect_refresh(1)
+    expect_http_json(%{"error" => "server"}, status: 503)
+    attach_lost_write_events()
+
+    assert {:error,
+            {:token_persistence_failed_after_refresh,
+             %PersistenceFailure{reason: :persist_boom, token: %Token{refresh_token: "shprt_new"}}}} =
+             ExShopifyApp.FailingStore.refresh_token(%{shopify_domain: domain})
+
+    assert_receive {:telemetry, [:ex_shopify_app, :access_token, :refresh, :persistence_failed],
+                    _m, %{shopify_domain: ^domain, result: :refresh_failed}}
   end
 
   test "a migration whose write fails twice surfaces the exchanged token" do

@@ -4,11 +4,12 @@ defmodule ExShopifyApp.AccessToken.PersistenceFailure do
 
   Returned inside `{:error, {:token_persistence_failed_after_refresh, %PersistenceFailure{}}}`
   by `ExShopifyApp.AccessToken.Repo.refresh_token/3` and `migrate_token/3` when the
-  Shopify exchange succeeded but the durable write failed on two runs in a row.
+  Shopify exchange succeeded but the durable write failed, and the retry stored no token.
 
   The stored row keeps the token it had, which Shopify still accepts, so the next
   refresh or migration recovers. Do not write `token` with `put_token/2`: it bypasses the
-  row lock. `reason` is the write error of the second run.
+  row lock. `token` is the newest pair Shopify issued, and `reason` is the error from
+  writing it.
   """
 
   alias ExShopifyApp.AccessToken.Token
