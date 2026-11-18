@@ -1,0 +1,19 @@
+mix.lock
+  s_1948a3fde9b69f::t_1b79f51de4fe3e 20,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "96ae424c2919ef82a504a1807b19d657f87319aa",
+  "prompts": {},
+  "sessions": {
+    "s_1948a3fde9b69f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "510c6129-2e68-4b6b-be29-c7d697494452",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
