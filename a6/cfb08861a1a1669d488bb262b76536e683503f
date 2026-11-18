@@ -1,0 +1,24 @@
+lib/ex_shopify_app/access_token/repo.ex
+  s_a8ddc3aa02cf4e::t_d0befed02fa0a7 355
+  s_a8ddc3aa02cf4e::t_d19ae1aed57603 224-225,229
+  s_a8ddc3aa02cf4e::t_3c50b8a2f971b7 328-330
+  s_a8ddc3aa02cf4e::t_571d807d07d13a 365,370,375
+  s_a8ddc3aa02cf4e::t_9d4d7e8176236c 437
+  s_a8ddc3aa02cf4e::t_7f3229e82694ae 388
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6cfb08861a1a1669d488bb262b76536e683503f",
+  "prompts": {},
+  "sessions": {
+    "s_a8ddc3aa02cf4e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "953c2f32-e401-4b34-a325-3ec7d3ad4fe1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
