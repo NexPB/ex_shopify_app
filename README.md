@@ -28,9 +28,9 @@ schema, so `:ecto` is a required dependency. The durable store
 ## Offline access tokens
 
 Shopify's expiring offline access tokens rotate **both** the access token and the
-refresh token on every refresh; the previous refresh token is invalidated as soon as
-Shopify accepts the request. If the new refresh token is not durably persisted before
-it is used, the merchant may have to re-authorize the app. The access-token modules are
+refresh token on every refresh. Shopify retires the previous refresh token once the new
+one is used, or 30 days after its own first use. If the new refresh token is not durably
+persisted, the merchant may have to re-authorize the app. The access-token modules are
 built around that safety concern.
 
 ### 1. Run the migration

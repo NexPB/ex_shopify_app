@@ -3,12 +3,13 @@ defmodule ExShopifyApp.AccessToken.Store do
   Behaviour for durably persisting and safely refreshing offline access tokens.
 
   Refreshing an expiring offline token rotates **both** the access token and the
-  refresh token; Shopify invalidates the previous refresh token once it accepts the
-  request. The new refresh token must therefore be persisted durably before it is
-  handed back to any caller, and concurrent refreshes for one shop must be serialized
-  across all processes and nodes. That serialization is inherently store-specific
-  (e.g. a `SELECT ... FOR UPDATE` row lock), which is why `c:refresh_token/2` is part
-  of this behaviour rather than a generic, store-agnostic manager.
+  refresh token. Shopify retires the previous refresh token once the new one is used, or
+  30 days after its own first use. The new refresh token must therefore be persisted
+  durably before it is handed back to any caller, and concurrent refreshes for one shop
+  must be serialized across all processes and nodes. That serialization is inherently
+  store-specific (e.g. a `SELECT ... FOR UPDATE` row lock), which is why
+  `c:refresh_token/2` is part of this behaviour rather than a generic, store-agnostic
+  manager.
 
   `ExShopifyApp.AccessToken.Repo` provides the production implementation backed by a
   host application's `Ecto.Repo`. Non-Ecto applications can implement this behaviour

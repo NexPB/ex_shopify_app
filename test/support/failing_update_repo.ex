@@ -26,9 +26,10 @@ defmodule ExShopifyApp.FailingUpdateRepo do
   @doc """
   Fail only the next `count` calls to `update/1`, then delegate to `TestRepo`.
 
-  The limit is global, so only `async: false` tests may set it. `reset/0` removes it.
+  `reset/0` removes the limit.
   """
   def fail_updates(count) when is_integer(count) and count >= 0 do
+    # The limit is global, so only `async: false` tests may set it.
     counter = :counters.new(1, [])
     :counters.put(counter, 1, count)
     :persistent_term.put(__MODULE__, counter)
