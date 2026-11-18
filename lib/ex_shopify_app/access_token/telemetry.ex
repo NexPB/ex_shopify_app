@@ -7,8 +7,8 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
     * `[..., :start | :stop | :exception]` — the refresh span.
     * `[..., :persistence_retried]` — Shopify returned a new token but the durable write
       failed, so the refresh runs once more (also logged at `warning`).
-    * `[..., :persistence_failed]` — the second run stored no token either (also
-      logged at `error`). `:result` classifies the second run.
+    * `[..., :persistence_failed]` — the write failed on that second run too (also
+      logged at `error`).
     * `[..., :stale_while_error]` — a refresh failed but the still-valid old token was
       served.
 
@@ -56,37 +56,35 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
   Emit the event for a failed write after a successful Shopify refresh.
 
   With `retry: true`, emits `:persistence_retried` and logs a warning. Otherwise emits
-  `:persistence_failed` and logs an error; `:retry_result` is the second run's result,
-  classified into `:result`.
+  `:persistence_failed` and logs an error.
   """
   def persistence_failed(domain, token, opts \\ []) do
-    meta = %{shopify_domain: domain, refresh_generation: token.refresh_generation}
+    event =
+      if Keyword.get(opts, :retry, false), do: :persistence_retried, else: :persistence_failed
 
-    {event, meta} =
-      if Keyword.get(opts, :retry, false) do
-        {:persistence_retried, meta}
-      else
-        result = classify(Keyword.get(opts, :retry_result, {:error, :unknown}))
-        {:persistence_failed, Map.put(meta, :result, result)}
-      end
+    :telemetry.execute(
+      @event ++ [event],
+      %{system_time: System.system_time()},
+      %{
+        shopify_domain: domain,
+        refresh_generation: token.refresh_generation
+      }
+    )
 
-    :telemetry.execute(@event ++ [event], %{system_time: System.system_time()}, meta)
-
-    log_lost_write(event, meta)
+    log_lost_write(event, domain)
   end
 
-  defp log_lost_write(:persistence_retried, %{shopify_domain: domain}) do
+  defp log_lost_write(:persistence_retried, domain) do
     Logger.warning(
       "ex_shopify_app: the write after a successful Shopify refresh failed for #{domain}. " <>
         "Refreshing again from the stored token."
     )
   end
 
-  defp log_lost_write(:persistence_failed, %{shopify_domain: domain, result: result}) do
+  defp log_lost_write(:persistence_failed, domain) do
     Logger.error(
-      "ex_shopify_app: the write after a successful Shopify refresh failed for #{domain}, " <>
-        "and the retry stored no token (#{result}). The call returns the newest token " <>
-        "Shopify issued in a PersistenceFailure."
+      "ex_shopify_app: the write after a successful Shopify refresh failed twice for " <>
+        "#{domain}. The stored token stays in place, and the next refresh uses it."
     )
   end
 

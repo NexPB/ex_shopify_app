@@ -319,33 +319,12 @@ defmodule ExShopifyApp.AccessToken.Repo do
   end
 
   defp retry_lost_write(domain, locked_run) when is_function(locked_run, 0) do
-    with {:error, {:lost_write, stored, failure}} <- locked_run.() do
+    with {:error, {:lost_write, stored, _failure}} <- locked_run.() do
       Telemetry.persistence_failed(domain, stored, retry: true)
 
-      retry_result =
-        try do
-          locked_run.()
-        rescue
-          exception ->
-            if RefreshResult.lock_timeout?(exception),
-              do: {:error, {:lock_timeout, exception}},
-              else: {:error, {:refresh_crashed, exception}}
-        end
-
-      case retry_result do
-        {:ok, _} = result ->
-          result
-
-        {:error, {:lost_write, _stored, retry_failure}} ->
-          result = {:error, {:token_persistence_failed_after_refresh, retry_failure}}
-          Telemetry.persistence_failed(domain, stored, retry_result: result)
-          result
-
-        # The retry stored no token, so `failure.token` may be the only pair Shopify
-        # still accepts.
-        {:error, _} ->
-          Telemetry.persistence_failed(domain, stored, retry_result: retry_result)
-          {:error, {:token_persistence_failed_after_refresh, failure}}
+      with {:error, {:lost_write, stored, failure}} <- locked_run.() do
+        Telemetry.persistence_failed(domain, stored)
+        {:error, {:token_persistence_failed_after_refresh, failure}}
       end
     end
   end

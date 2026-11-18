@@ -170,7 +170,7 @@ the token it had. Shopify still accepts that token: a refresh token stays valid 
 its replacement is used (for at most 30 days after its first use), and a repeated
 migration returns the same token pair for 7 days. The store therefore runs the locked
 refresh once more and emits `:persistence_retried` with a `warning` log. Only when the
-second run also stores no token does the call return
+second write also fails does the call return
 `{:error, {:token_persistence_failed_after_refresh, %ExShopifyApp.AccessToken.PersistenceFailure{}}}`
 and emit `:persistence_failed` with an `error` log (token values redacted). The row
 still holds a usable token, so the next call recovers. See
