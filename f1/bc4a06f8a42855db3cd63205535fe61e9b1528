@@ -1,0 +1,27 @@
+test/support/failing_update_repo.ex
+  s_1948a3fde9b69f::t_dc62fa3979ff6f 29,32
+README.md
+  s_1948a3fde9b69f::t_f1cc8aafb87ade 31-33
+lib/ex_shopify_app/access_token/persistence_failure.ex
+  s_1948a3fde9b69f::t_b63575c254a193 10-11,19-20
+lib/ex_shopify_app/access_token/store.ex
+  s_1948a3fde9b69f::t_2b9964ad67cfed 9-12
+  s_1948a3fde9b69f::t_9d0dc46540237c 7-8
+  s_1948a3fde9b69f::t_daf7616e500e14 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f1bc4a06f8a42855db3cd63205535fe61e9b1528",
+  "prompts": {},
+  "sessions": {
+    "s_1948a3fde9b69f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "510c6129-2e68-4b6b-be29-c7d697494452",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "NexPB <1289189+NexPB@users.noreply.github.com>"
+    }
+  }
+}
