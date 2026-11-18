@@ -68,8 +68,9 @@ defmodule ExShopifyApp.AccessToken do
   @doc """
   Refresh an expiring offline access token using its refresh token.
 
-  Both the access token and the refresh token are regenerated; the previous refresh
-  token is invalidated, so the returned token's `refresh_token` **must** be persisted.
+  Both the access token and the refresh token are regenerated. Shopify retires the
+  previous refresh token once the returned one is used, or 30 days after its first use,
+  so the returned token's `refresh_token` **must** be persisted.
 
   This function only performs the HTTP exchange and decides nothing about persistence
   or locking. Concurrent refreshes for the same shop would invalidate each other — use

@@ -28,9 +28,9 @@ schema, so `:ecto` is a required dependency. The durable store
 ## Offline access tokens
 
 Shopify's expiring offline access tokens rotate **both** the access token and the
-refresh token on every refresh; the previous refresh token is invalidated as soon as
-Shopify accepts the request. If the new refresh token is not durably persisted before
-it is used, the merchant may have to re-authorize the app. The access-token modules are
+refresh token on every refresh. Shopify retires the previous refresh token once the new
+one is used, or 30 days after its own first use. If the new refresh token is not durably
+persisted, the merchant may have to re-authorize the app. The access-token modules are
 built around that safety concern.
 
 ### 1. Run the migration
@@ -163,20 +163,25 @@ already rotated. Still avoid refreshing inside your own `Repo.transaction/2` —
 pooled connection for the wait, and logs a warning saying so.
 
 The unavoidable residual risk is a VM/host crash after Shopify responds but before the
-commit: Shopify and your database cannot share a transaction. Failures of the write
-*after* a successful Shopify refresh surface as the distinct, critical
+commit: Shopify and your database cannot share a transaction.
+
+A write that fails *after* a successful Shopify refresh rolls back, so the row keeps
+the token it had. Shopify still accepts that token: a refresh token stays valid until
+its replacement is used (for at most 30 days after its first use), and a repeated
+migration returns the same token pair for 7 days. The store therefore runs the locked
+refresh once more and emits `:persistence_retried` with a `warning` log. Only when the
+second write also fails does the call return
 `{:error, {:token_persistence_failed_after_refresh, %ExShopifyApp.AccessToken.PersistenceFailure{}}}`
-and emit telemetry plus an `error` log (token values redacted). The struct carries the
-exchanged-but-unpersisted `token` (and the underlying `reason`) so a caller can retry
-the write (e.g. via `put_token/2`) instead of losing the token; re-running the
-exchange would fail because Shopify has already invalidated the prior token.
+and emit `:persistence_failed` with an `error` log (token values redacted). The row
+still holds a usable token, so the next call recovers. See
+[how refresh token rotation works](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens#how-refresh-token-rotation-works).
 
 ### Error taxonomy
 
 - `{:error, :no_token}`
 - `{:error, :reauthorization_required}`
 - `{:error, {:refresh_failed, reason}}` (retryable; `reason` is `:timeout` when the Shopify request exceeds the 15s request timeout)
-- `{:error, {:token_persistence_failed_after_refresh, %PersistenceFailure{reason: reason, token: token}}}` (critical; retry persisting `token`)
+- `{:error, {:token_persistence_failed_after_refresh, %PersistenceFailure{reason: reason, token: token}}}` (retryable; the write failed twice, and the stored token still refreshes)
 - `{:error, {:lock_timeout, reason}}`
 - `{:error, {:refresh_crashed, reason}}`
 - `{:error, {:refresh_unavailable, reason}}` (the refresh task exited abnormally)
@@ -184,6 +189,7 @@ exchange would fail because Shopify has already invalidated the prior token.
 ### Telemetry
 
 - `[:ex_shopify_app, :access_token, :refresh, :start | :stop | :exception]`
+- `[:ex_shopify_app, :access_token, :refresh, :persistence_retried]`
 - `[:ex_shopify_app, :access_token, :refresh, :persistence_failed]`
 - `[:ex_shopify_app, :access_token, :refresh, :stale_while_error]`
 

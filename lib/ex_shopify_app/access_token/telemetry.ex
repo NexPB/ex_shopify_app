@@ -5,8 +5,10 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
   All events share the `[:ex_shopify_app, :access_token, :refresh]` prefix:
 
     * `[..., :start | :stop | :exception]` — the refresh span.
-    * `[..., :persistence_failed]` — Shopify returned a new token but the durable write
-      failed (also logged at `error`).
+    * `[..., :persistence_retried]` — Shopify returned a new token but the durable write
+      failed, so the refresh runs once more (also logged at `warning`).
+    * `[..., :persistence_failed]` — the write failed on that second run too (also
+      logged at `error`).
     * `[..., :stale_while_error]` — a refresh failed but the still-valid old token was
       served.
 
@@ -50,10 +52,18 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
     )
   end
 
-  @doc "Emit the `:persistence_failed` event and log the critical loss-of-token warning."
-  def persistence_failed(domain, token) do
+  @doc """
+  Emit the event for a failed write after a successful Shopify refresh.
+
+  With `retry: true`, emits `:persistence_retried` and logs a warning. Otherwise emits
+  `:persistence_failed` and logs an error.
+  """
+  def persistence_failed(domain, token, opts \\ []) do
+    event =
+      if Keyword.get(opts, :retry, false), do: :persistence_retried, else: :persistence_failed
+
     :telemetry.execute(
-      @event ++ [:persistence_failed],
+      @event ++ [event],
       %{system_time: System.system_time()},
       %{
         shopify_domain: domain,
@@ -61,10 +71,20 @@ defmodule ExShopifyApp.AccessToken.Telemetry do
       }
     )
 
+    log_lost_write(event, domain)
+  end
+
+  defp log_lost_write(:persistence_retried, domain) do
+    Logger.warning(
+      "ex_shopify_app: the write after a successful Shopify refresh failed for #{domain}. " <>
+        "Refreshing again from the stored token."
+    )
+  end
+
+  defp log_lost_write(:persistence_failed, domain) do
     Logger.error(
-      "ex_shopify_app: durable persistence FAILED after a successful Shopify refresh " <>
-        "for #{domain} (token values redacted). The new refresh token may be lost — " <>
-        "the shop may need to reauthorize."
+      "ex_shopify_app: the write after a successful Shopify refresh failed twice for " <>
+        "#{domain}. The stored token stays in place, and the next refresh uses it."
     )
   end
 

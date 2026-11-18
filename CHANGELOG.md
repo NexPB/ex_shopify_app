@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `ExShopifyApp.AccessToken.Repo.refresh_token/3` and `migrate_token/3` run the locked
+  refresh once more when the write after a successful Shopify exchange fails. The
+  first failure emits the new `[:ex_shopify_app, :access_token, :refresh, :persistence_retried]`
+  event and logs a `warning`. `{:token_persistence_failed_after_refresh, _}`, the
+  `:persistence_failed` event and the `error` log now come only when the second write
+  also fails.
+- The docs no longer say that a failed write loses the token. The rolled-back row keeps
+  a token that Shopify still accepts, so the next refresh recovers. Do not write
+  `PersistenceFailure.token` with `put_token/2`.
+- `ExShopifyApp.AccessToken.Telemetry.persistence_failed/3` takes `retry: true` to
+  emit `:persistence_retried` and log a `warning` instead.
+
 ## [2.2.0]
 
 ### Added
